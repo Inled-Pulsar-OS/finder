@@ -46,8 +46,7 @@
         <child>
           <object class="GtkBox">
             <style>
-              <class name="linked"/>
-              <class name="finder-view-pill"/>
+              <class name="finder-pill-segmented"/>
             </style>
             <child>
               <object class="GtkToggleButton" id="icon_view_button">

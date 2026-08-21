@@ -147,6 +147,21 @@ on_update_callback (GObject      *object,
             g_object_unref (undo_info);
         }
 
+        for (GList *l = data->selection; l != NULL; l = l->next)
+        {
+            NautilusFile *f = NAUTILUS_FILE (l->data);
+            g_autofree gchar *u = nautilus_file_get_uri (f);
+            if (data->star)
+            {
+                g_hash_table_add (data->tag_manager->starred_file_uris, g_strdup (u));
+            }
+            else
+            {
+                g_hash_table_remove (data->tag_manager->starred_file_uris, u);
+            }
+        }
+        g_signal_emit_by_name (data->tag_manager, "starred-changed", data->selection);
+
         g_task_return_boolean (data->task, TRUE);
         g_object_unref (data->task);
     }
