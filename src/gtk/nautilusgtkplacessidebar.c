@@ -667,23 +667,14 @@ on_cloud_add_popover_closed (GtkPopover *popover,
 }
 
 static void
-on_cloud_add_pressed (GtkGestureClick *gesture,
-                      int              n_press,
-                      double           x,
-                      double           y,
-                      gpointer         user_data)
+show_cloud_add_popover (NautilusGtkPlacesSidebar *sidebar,
+                        GtkWidget                *row)
 {
-  NautilusGtkPlacesSidebar *sidebar = NAUTILUS_GTK_PLACES_SIDEBAR (user_data);
-  GtkWidget *row;
   GtkWidget *popover;
   GMenu *menu, *section;
   GMenuItem *item;
+  int width, height;
   GdkRectangle rect;
-
-  row = gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (gesture));
-
-  /* Claim the sequence so the row's default activation does not also run. */
-  gtk_gesture_set_state (GTK_GESTURE (gesture), GTK_EVENT_SEQUENCE_CLAIMED);
 
   menu = g_menu_new ();
   section = g_menu_new ();
@@ -707,8 +698,10 @@ on_cloud_add_pressed (GtkGestureClick *gesture,
   g_object_unref (menu);
   gtk_widget_set_parent (popover, row);
   gtk_popover_set_position (GTK_POPOVER (popover), GTK_POS_RIGHT);
-  rect.x = (int) x;
-  rect.y = (int) y;
+  width = gtk_widget_get_width (row);
+  height = gtk_widget_get_height (row);
+  rect.x = width;
+  rect.y = height / 2;
   rect.width = 1;
   rect.height = 1;
   gtk_popover_set_pointing_to (GTK_POPOVER (popover), &rect);
@@ -1271,27 +1264,17 @@ update_places (NautilusGtkPlacesSidebar *sidebar)
       }
   }
 
-  /* Entry point to configure online accounts (Google Drive, Nextcloud…). */
+  /* Entry point to configure online accounts (Google Drive, Nextcloud…).
+   * Activating the row shows the provider menu (see open_row). */
   {
     GIcon *goa_icon = g_themed_icon_new_with_default_fallbacks ("avatar-default-symbolic");
-    GtkWidget *goa_row = add_place (sidebar, NAUTILUS_GTK_PLACES_BUILT_IN,
-                                    NAUTILUS_GTK_PLACES_SECTION_CLOUD,
-                                    _("Add Online Account…"), goa_icon, NULL,
-                                    "goa-add://account",
-                                    NULL, NULL, NULL, NULL, 0,
-                                    _("Add Online Account…"));
-    GtkGesture *click;
-
+    add_place (sidebar, NAUTILUS_GTK_PLACES_BUILT_IN,
+               NAUTILUS_GTK_PLACES_SECTION_CLOUD,
+               _("Add Online Account…"), goa_icon, NULL,
+               "goa-add://account",
+               NULL, NULL, NULL, NULL, 0,
+               _("Add Online Account…"));
     g_object_unref (goa_icon);
-
-    /* Pressing the row shows the provider menu instead of launching the
-     * settings panel directly. */
-    click = gtk_gesture_click_new ();
-    gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (click), 0);
-    gtk_event_controller_set_propagation_phase (GTK_EVENT_CONTROLLER (click),
-                                                GTK_PHASE_CAPTURE);
-    g_signal_connect (click, "pressed", G_CALLBACK (on_cloud_add_pressed), sidebar);
-    gtk_widget_add_controller (goa_row, GTK_EVENT_CONTROLLER (click));
   }
 
   /* Add macOS style Tags Section */
@@ -2089,15 +2072,11 @@ open_row (NautilusGtkSidebarRow      *row,
 
   if (uri != NULL && g_str_has_prefix (uri, "goa-add://"))
     {
-      g_autoptr (GError) error = NULL;
+      /* Show the provider menu instead of launching the settings directly. */
+      show_cloud_add_popover (sidebar, GTK_WIDGET (row));
 
       g_object_unref (sidebar);
       g_free (uri);
-
-      if (!g_spawn_command_line_async ("gnome-control-center online-accounts", &error))
-        {
-          g_warning ("Unable to launch online accounts settings: %s", error->message);
-        }
       return;
     }
 
