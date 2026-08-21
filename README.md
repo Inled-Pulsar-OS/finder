@@ -2,41 +2,41 @@
 
 ![Finder Screenshot](finder_screenshot.png)
 
-Finder es el explorador de archivos oficial de **Pulsar OS**, derivado de GNOME Files (Nautilus) y modificado bajo la misma licencia **GPL-3.0**. Este derivado añade un aspecto visual y funcional inspirado en macOS, incluyendo etiquetas de colores para carpetas y archivos, y un diseño unificado y minimalista.
+Finder is the official file explorer for **Pulsar OS**, derived from GNOME Files (Nautilus) and modified under the same **GPL-3.0** license. This derivative introduces a visual and functional experience inspired by macOS, featuring real-time folder color tagging and a dedicated color filter sidebar section.
 
-## Características principales
+## Key Features
 
-* **Diseño macOS**: Esquinas redondeadas, controles integrados y una barra de herramientas limpia.
-* **Etiquetas por colores**: Tintado de carpetas en tiempo real con filtrado dedicado por color en la barra lateral.
-* **Navegación Fluida**: Rápido refresco de vistas al actualizar propiedades o etiquetas.
+* **macOS Layout**: Rounded corners, integrated controls, and a clean toolbar.
+* **Color Tags**: Live folder tinting with dedicated per-color filtering in the sidebar.
+* **Fluid Navigation**: Instant view updates when changing folder properties or tags.
 
 ---
 
-## Cómo construir
+## How to Build
 
-Este proyecto utiliza el sistema de construcción `meson` y `ninja`.
+This project uses the `meson` and `ninja` build systems.
 
-### Requisitos previos
+### Prerequisites
 
-Asegúrate de instalar las herramientas de compilación y las dependencias de desarrollo de GTK4, Libadwaita y Tracker.
+Ensure you have the build tools and development packages for GTK4, Libadwaita, and Tracker installed on your system.
 
-### Pasos de compilación
+### Build Steps
 
-1. **Configurar el directorio de construcción**:
+1. **Configure the build directory**:
    ```bash
    meson setup _build
    ```
 
-2. **Compilar el proyecto**:
+2. **Compile the project**:
    ```bash
    ninja -C _build
    ```
 
 ---
 
-## Cómo probar
+## How to Run & Test
 
-Puedes ejecutar la versión compilada directamente sin alterar el sistema:
+You can run the compiled binary directly without installing it system-wide:
 
 ```bash
 ./_build/src/nautilus --new-window
@@ -44,15 +44,15 @@ Puedes ejecutar la versión compilada directamente sin alterar el sistema:
 
 ---
 
-## Cómo instalar
+## How to Install
 
-Para instalar la aplicación en el sistema (requiere permisos de administrador):
+To install the application system-wide (requires administrative privileges):
 
 ```bash
 sudo ninja -C _build install
 ```
 
-O utilizando `pkexec`:
+Or using `pkexec`:
 
 ```bash
 pkexec ninja -C _build install
