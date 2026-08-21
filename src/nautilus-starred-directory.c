@@ -97,11 +97,13 @@ disconnect_and_unmonitor_file (NautilusFile              *file,
     }
 }
 
+static gboolean nautilus_starred_directory_matches_file (NautilusFavoriteDirectory *self,
+                                                         NautilusFile              *file);
+
 static void
 nautilus_starred_directory_update_files (NautilusFavoriteDirectory *self,
                                          GList                     *changed_files)
 {
-    NautilusTagManager *tag_manager = nautilus_tag_manager_get ();
     GList *monitor_list;
     FavoriteMonitor *monitor;
     g_autoptr (GHashTable) uri_table = NULL;
@@ -123,18 +125,17 @@ nautilus_starred_directory_update_files (NautilusFavoriteDirectory *self,
     {
         NautilusFile *file = l->data;
         g_autofree char *uri = nautilus_file_get_uri (file);
+        gboolean matches = nautilus_starred_directory_matches_file (self, file);
 
         next = l->next;
-        if (g_hash_table_contains (uri_table, uri) &&
-            !nautilus_tag_manager_file_is_starred (tag_manager, uri))
+        if (g_hash_table_contains (uri_table, uri) && !matches)
         {
             disconnect_and_unmonitor_file (file, self);
             nautilus_file_unref (file);
             files_removed = g_list_prepend (files_removed, nautilus_file_ref (file));
             self->files = g_list_remove (self->files, file);
         }
-        else if (!g_hash_table_contains (uri_table, uri) &&
-                 nautilus_tag_manager_file_is_starred (tag_manager, uri))
+        else if (!g_hash_table_contains (uri_table, uri) && matches)
         {
             for (monitor_list = self->monitor_list; monitor_list; monitor_list = monitor_list->next)
             {
@@ -196,15 +197,66 @@ real_new_file_from_filename (NautilusDirectory *directory,
                                         NULL));
 }
 
+static gchar *
+nautilus_starred_directory_get_target_color (NautilusFavoriteDirectory *self)
+{
+    g_autofree gchar *uri = nautilus_directory_get_uri (NAUTILUS_DIRECTORY (self));
+    if (uri != NULL)
+    {
+        const gchar *after_scheme = uri + strlen (SCHEME_STARRED "://");
+        while (*after_scheme == '/')
+        {
+            after_scheme++;
+        }
+        if (*after_scheme != '\0')
+        {
+            return g_strdup (after_scheme);
+        }
+    }
+    return NULL;
+}
+
+static gboolean
+nautilus_starred_directory_matches_file (NautilusFavoriteDirectory *self,
+                                        NautilusFile              *file)
+{
+    g_autofree gchar *uri = NULL;
+    g_autofree gchar *target_color = NULL;
+
+    uri = nautilus_file_get_uri (file);
+    if (!nautilus_tag_manager_file_is_starred (nautilus_tag_manager_get (), uri))
+    {
+        return FALSE;
+    }
+
+    target_color = nautilus_starred_directory_get_target_color (self);
+    if (target_color != NULL && *target_color != '\0')
+    {
+        const gchar *folder_color = nautilus_file_get_metadata (file, "folder-color", NULL);
+        if (folder_color != NULL && g_strcmp0 (folder_color, target_color) == 0)
+        {
+            return TRUE;
+        }
+
+        /* Check custom-icon-name as fallback e.g. folder-red */
+        const gchar *custom_icon = nautilus_file_get_metadata (file, NAUTILUS_METADATA_KEY_CUSTOM_ICON_NAME, NULL);
+        g_autofree gchar *expected_icon = g_strdup_printf ("folder-%s", target_color);
+        if (custom_icon != NULL && g_strcmp0 (custom_icon, expected_icon) == 0)
+        {
+            return TRUE;
+        }
+
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 static gboolean
 real_contains_file (NautilusDirectory *directory,
                     NautilusFile      *file)
 {
-    g_autofree gchar *uri = NULL;
-
-    uri = nautilus_file_get_uri (file);
-
-    return nautilus_tag_manager_file_is_starred (nautilus_tag_manager_get (), uri);
+    return nautilus_starred_directory_matches_file (NAUTILUS_STARRED_DIRECTORY (directory), file);
 }
 
 static gboolean
@@ -453,19 +505,9 @@ nautilus_starred_directory_set_files (NautilusFavoriteDirectory *self)
     {
         NautilusFile *file = l->data;
 
-        if (target_color != NULL && *target_color != '\0')
+        if (!nautilus_starred_directory_matches_file (self, file))
         {
-            const gchar *folder_color = nautilus_file_get_metadata (file, "folder-color", NULL);
-            if (folder_color == NULL || g_strcmp0 (folder_color, target_color) != 0)
-            {
-                /* Check custom-icon-name as fallback e.g. folder-red */
-                const gchar *custom_icon = nautilus_file_get_metadata (file, NAUTILUS_METADATA_KEY_CUSTOM_ICON_NAME, NULL);
-                g_autofree gchar *expected_icon = g_strdup_printf ("folder-%s", target_color);
-                if (custom_icon == NULL || g_strcmp0 (custom_icon, expected_icon) != 0)
-                {
-                    continue;
-                }
-            }
+            continue;
         }
 
         g_signal_connect (file, "changed", G_CALLBACK (file_changed), self);
@@ -540,6 +582,21 @@ nautilus_starred_directory_dispose (GObject *object)
 }
 
 static void
+nautilus_starred_directory_constructed (GObject *object)
+{
+    NautilusFavoriteDirectory *self = NAUTILUS_STARRED_DIRECTORY (object);
+
+    G_OBJECT_CLASS (nautilus_starred_directory_parent_class)->constructed (object);
+
+    g_signal_connect (nautilus_tag_manager_get (),
+                      "starred-changed",
+                      (GCallback) on_starred_files_changed,
+                      self);
+
+    nautilus_starred_directory_set_files (self);
+}
+
+static void
 nautilus_starred_directory_class_init (NautilusFavoriteDirectoryClass *klass)
 {
     GObjectClass *oclass;
@@ -548,6 +605,7 @@ nautilus_starred_directory_class_init (NautilusFavoriteDirectoryClass *klass)
     oclass = G_OBJECT_CLASS (klass);
     directory_class = NAUTILUS_DIRECTORY_CLASS (klass);
 
+    oclass->constructed = nautilus_starred_directory_constructed;
     oclass->finalize = nautilus_starred_directory_finalize;
     oclass->dispose = nautilus_starred_directory_dispose;
 
@@ -577,10 +635,4 @@ nautilus_starred_directory_new (void)
 static void
 nautilus_starred_directory_init (NautilusFavoriteDirectory *self)
 {
-    g_signal_connect (nautilus_tag_manager_get (),
-                      "starred-changed",
-                      (GCallback) on_starred_files_changed,
-                      self);
-
-    nautilus_starred_directory_set_files (self);
 }
