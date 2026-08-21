@@ -1135,8 +1135,19 @@ update_places (NautilusGtkPlacesSidebar *sidebar)
       mount_uri = g_file_get_uri (root);
       name = g_mount_get_name (mount);
       tooltip = g_file_get_parse_name (root);
+      NautilusGtkPlacesSectionType mount_section = NAUTILUS_GTK_PLACES_SECTION_MOUNTS;
+      if (g_str_has_prefix (mount_uri, "google-drive://") ||
+          g_str_has_prefix (mount_uri, "onedrive://") ||
+          g_str_has_prefix (mount_uri, "nextcloud://") ||
+          g_str_has_prefix (mount_uri, "owncloud://") ||
+          g_str_has_prefix (mount_uri, "dav://") ||
+          g_str_has_prefix (mount_uri, "davs://"))
+        {
+          mount_section = NAUTILUS_GTK_PLACES_SECTION_CLOUD;
+        }
+
       add_place (sidebar, NAUTILUS_GTK_PLACES_EXTERNAL_MOUNT,
-                 NAUTILUS_GTK_PLACES_SECTION_MOUNTS,
+                 mount_section,
                  name, start_icon, NULL, mount_uri,
                  NULL, NULL, mount, NULL, 0, tooltip);
       g_object_unref (root);
