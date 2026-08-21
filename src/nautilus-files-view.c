@@ -1793,6 +1793,42 @@ action_unstar (GSimpleAction *action,
 }
 
 static void
+action_set_folder_color (GSimpleAction *action,
+                         GVariant      *parameter,
+                         gpointer       user_data)
+{
+    NautilusFilesView *view;
+    g_autolist (NautilusFile) selection = NULL;
+    const gchar *color = NULL;
+
+    if (parameter != NULL)
+    {
+        color = g_variant_get_string (parameter, NULL);
+    }
+
+    view = NAUTILUS_FILES_VIEW (user_data);
+    selection = nautilus_view_get_selection (NAUTILUS_VIEW (view));
+
+    for (GList *l = selection; l != NULL; l = l->next)
+    {
+        NautilusFile *file = NAUTILUS_FILE (l->data);
+        if (color == NULL || g_strcmp0 (color, "none") == 0 || g_strcmp0 (color, "") == 0)
+        {
+            nautilus_file_set_metadata (file, NAUTILUS_METADATA_KEY_CUSTOM_ICON_NAME, NULL, NULL);
+            nautilus_file_set_metadata (file, "folder-color", NULL, NULL);
+        }
+        else
+        {
+            g_autofree gchar *icon_name = g_strdup_printf ("folder-%s", color);
+            nautilus_file_set_metadata (file, NAUTILUS_METADATA_KEY_CUSTOM_ICON_NAME, NULL, icon_name);
+            nautilus_file_set_metadata (file, "folder-color", NULL, color);
+        }
+    }
+}
+
+
+
+static void
 action_restore_from_trash (GSimpleAction *action,
                            GVariant      *state,
                            gpointer       user_data)
@@ -7213,6 +7249,7 @@ const GActionEntry view_entries[] =
     { .name = "delete-from-trash", .activate = action_delete },
     { .name = "star", .activate = action_star},
     { .name = "unstar", .activate = action_unstar},
+    { .name = "set-folder-color", .activate = action_set_folder_color, .parameter_type = "s" },
     /* We separate the shortcut and the menu item since we want the shortcut
      * to always be available, but we don't want the menu item shown if not
      * completely necesary. Since the visibility of the menu item is based on

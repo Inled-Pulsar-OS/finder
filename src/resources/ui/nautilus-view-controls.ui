@@ -42,40 +42,25 @@
         <property name="spacing">6</property>
         <property name="valign">center</property>
 
-        <!-- Segmented Finder Views (Grid/Icons, List, Column, Gallery) -->
+        <!-- Segmented Finder Views (Icons, List) with macOS pill container -->
         <child>
           <object class="GtkBox">
             <style>
               <class name="linked"/>
+              <class name="finder-view-pill"/>
             </style>
             <child>
               <object class="GtkToggleButton" id="icon_view_button">
                 <property name="icon-name">view-grid-symbolic</property>
                 <property name="tooltip-text" translatable="yes">as Icons</property>
                 <property name="action-name">slot.files-view-mode</property>
-                <property name="action-target">uint32 1</property>
+                <property name="action-target">uint32 2</property>
               </object>
             </child>
             <child>
               <object class="GtkToggleButton" id="list_view_button">
                 <property name="icon-name">view-list-symbolic</property>
                 <property name="tooltip-text" translatable="yes">as List</property>
-                <property name="action-name">slot.files-view-mode</property>
-                <property name="action-target">uint32 0</property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkButton" id="column_view_button">
-                <property name="icon-name">view-column-symbolic</property>
-                <property name="tooltip-text" translatable="yes">as Columns</property>
-                <property name="action-name">slot.files-view-mode</property>
-                <property name="action-target">uint32 0</property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkButton" id="gallery_view_button">
-                <property name="icon-name">view-compact-symbolic</property>
-                <property name="tooltip-text" translatable="yes">as Gallery</property>
                 <property name="action-name">slot.files-view-mode</property>
                 <property name="action-target">uint32 1</property>
               </object>
