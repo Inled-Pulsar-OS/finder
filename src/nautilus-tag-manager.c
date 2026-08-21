@@ -623,8 +623,6 @@ setup_database (NautilusTagManager  *self,
     g_autoptr (GFile) store = NULL;
     g_autoptr (GFile) ontology = NULL;
 
-    /* Open private database to store nautilus:starred property. */
-
     datadir = NAUTILUS_DATADIR;
 
     store_path = g_build_filename (g_get_user_data_dir (), "nautilus", "tags", NULL);
@@ -632,24 +630,23 @@ setup_database (NautilusTagManager  *self,
 
     if (!g_file_test (ontology_path, G_FILE_TEST_IS_DIR))
     {
-        /* Fallback for uninstalled local run */
-        g_autofree gchar *cwd = g_get_current_dir ();
-        g_autofree gchar *local_onto = g_build_filename (cwd, "data", "ontology", NULL);
-        if (g_file_test (local_onto, G_FILE_TEST_IS_DIR))
+        const gchar *try_paths[] = {
+            "/home/jaime/Documentos/pulsar/PKG/nautilus-finder/data/ontology",
+            "/usr/local/share/nautilus/ontology",
+            "/usr/share/nautilus/ontology"
+        };
+        for (guint p_i = 0; p_i < G_N_ELEMENTS (try_paths); p_i++)
         {
-            g_free (ontology_path);
-            ontology_path = g_steal_pointer (&local_onto);
-        }
-        else
-        {
-            g_autofree gchar *build_onto = g_build_filename (cwd, "..", "data", "ontology", NULL);
-            if (g_file_test (build_onto, G_FILE_TEST_IS_DIR))
+            if (g_file_test (try_paths[p_i], G_FILE_TEST_IS_DIR))
             {
                 g_free (ontology_path);
-                ontology_path = g_steal_pointer (&build_onto);
+                ontology_path = g_strdup (try_paths[p_i]);
+                break;
             }
         }
     }
+
+    g_message ("nautilus-tag-manager: Using ontology path: %s", ontology_path);
 
     store = g_file_new_for_path (store_path);
     ontology = g_file_new_for_path (ontology_path);
