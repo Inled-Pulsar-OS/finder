@@ -630,6 +630,27 @@ setup_database (NautilusTagManager  *self,
     store_path = g_build_filename (g_get_user_data_dir (), "nautilus", "tags", NULL);
     ontology_path = g_build_filename (datadir, "ontology", NULL);
 
+    if (!g_file_test (ontology_path, G_FILE_TEST_IS_DIR))
+    {
+        /* Fallback for uninstalled local run */
+        g_autofree gchar *cwd = g_get_current_dir ();
+        g_autofree gchar *local_onto = g_build_filename (cwd, "data", "ontology", NULL);
+        if (g_file_test (local_onto, G_FILE_TEST_IS_DIR))
+        {
+            g_free (ontology_path);
+            ontology_path = g_steal_pointer (&local_onto);
+        }
+        else
+        {
+            g_autofree gchar *build_onto = g_build_filename (cwd, "..", "data", "ontology", NULL);
+            if (g_file_test (build_onto, G_FILE_TEST_IS_DIR))
+            {
+                g_free (ontology_path);
+                ontology_path = g_steal_pointer (&build_onto);
+            }
+        }
+    }
+
     store = g_file_new_for_path (store_path);
     ontology = g_file_new_for_path (ontology_path);
 

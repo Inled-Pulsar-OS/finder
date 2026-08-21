@@ -402,21 +402,26 @@ row.tag-gray image {
 
 /* Finder Pill View Switcher & Action buttons */
 box.finder-view-pill,
-.finder-view-pill {
-  background-color: color-mix(in srgb, currentColor 10%, transparent);
+.finder-view-pill,
+.linked.finder-view-pill {
+  background-color: color-mix(in srgb, currentColor 10%, transparent) !important;
   border-radius: 9999px !important;
   padding: 3px !important;
-  border: 1px solid color-mix(in srgb, currentColor 8%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 8%, transparent) !important;
+  box-shadow: none !important;
 }
 
 box.finder-view-pill button,
 .finder-view-pill button,
-.finder-view-pill togglebutton {
+.finder-view-pill togglebutton,
+.linked.finder-view-pill > button,
+.linked.finder-view-pill > button:first-child,
+.linked.finder-view-pill > button:last-child {
   border-radius: 9999px !important;
   min-height: 24px !important;
   min-width: 28px !important;
   padding: 2px 8px !important;
-  margin: 0 !important;
+  margin: 0 1px !important;
   border: none !important;
   background: transparent !important;
   box-shadow: none !important;
@@ -424,14 +429,16 @@ box.finder-view-pill button,
 
 box.finder-view-pill button:checked,
 .finder-view-pill button:checked,
-.finder-view-pill togglebutton:checked {
+.finder-view-pill togglebutton:checked,
+.linked.finder-view-pill > button:checked {
   background-color: color-mix(in srgb, currentColor 22%, transparent) !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
 }
 
 box.finder-view-pill button:hover:not(:checked),
 .finder-view-pill button:hover:not(:checked),
-.finder-view-pill togglebutton:hover:not(:checked) {
+.finder-view-pill togglebutton:hover:not(:checked),
+.linked.finder-view-pill > button:hover:not(:checked) {
   background-color: color-mix(in srgb, currentColor 12%, transparent) !important;
 }
 

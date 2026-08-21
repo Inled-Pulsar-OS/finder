@@ -49,6 +49,7 @@
 #include "nautilus-compress-dialog.h"
 #include "nautilus-dbus-launcher.h"
 #include "nautilus-directory.h"
+#include "nautilus-directory-notify.h"
 #include "nautilus-dnd.h"
 #include "nautilus-enums.h"
 #include "nautilus-error-reporting.h"
@@ -1800,6 +1801,7 @@ action_set_folder_color (GSimpleAction *action,
     NautilusFilesView *view;
     g_autolist (NautilusFile) selection = NULL;
     const gchar *color = NULL;
+    NautilusFilesViewPrivate *priv;
 
     if (parameter != NULL)
     {
@@ -1807,7 +1809,25 @@ action_set_folder_color (GSimpleAction *action,
     }
 
     view = NAUTILUS_FILES_VIEW (user_data);
+    priv = nautilus_files_view_get_instance_private (view);
     selection = nautilus_view_get_selection (NAUTILUS_VIEW (view));
+
+    if (color == NULL || g_strcmp0 (color, "none") == 0 || g_strcmp0 (color, "") == 0)
+    {
+        nautilus_tag_manager_unstar_files (nautilus_tag_manager_get (),
+                                           G_OBJECT (view),
+                                           selection,
+                                           NULL,
+                                           priv->starred_cancellable);
+    }
+    else
+    {
+        nautilus_tag_manager_star_files (nautilus_tag_manager_get (),
+                                         G_OBJECT (view),
+                                         selection,
+                                         NULL,
+                                         priv->starred_cancellable);
+    }
 
     for (GList *l = selection; l != NULL; l = l->next)
     {
@@ -1823,6 +1843,8 @@ action_set_folder_color (GSimpleAction *action,
             nautilus_file_set_metadata (file, NAUTILUS_METADATA_KEY_CUSTOM_ICON_NAME, NULL, icon_name);
             nautilus_file_set_metadata (file, "folder-color", NULL, color);
         }
+        nautilus_file_invalidate_all_attributes (file);
+        nautilus_file_changed (file);
     }
 }
 
