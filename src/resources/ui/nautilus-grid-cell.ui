@@ -11,35 +11,60 @@
             <property name="orientation">vertical</property>
             <property name="spacing">6</property>
             <child>
-              <object class="GtkBox" id="fixed_height_box">
-                <property name="orientation">horizontal</property>
+              <object class="GtkOverlay" id="fixed_height_box">
                 <property name="halign">center</property>
                 <property name="margin-start">18</property>
                 <child>
-                  <object class="AdwClamp" id="icon_bin">
-                    <property name="maximum-size">0</property>
-                    <property name="child">
-                      <object class="GtkPicture" id="icon">
-                        <property name="halign">center</property>
-                        <property name="hexpand">True</property>
-                        <property name="valign">center</property>
-                        <property name="vexpand">True</property>
-                        <property name="can-shrink">False</property>
-                        <property name="content-fit">cover</property>
+                  <object class="GtkBox">
+                    <property name="orientation">horizontal</property>
+                    <child>
+                      <object class="AdwClamp" id="icon_bin">
+                        <property name="maximum-size">0</property>
+                        <property name="child">
+                          <object class="GtkPicture" id="icon">
+                            <property name="halign">center</property>
+                            <property name="hexpand">True</property>
+                            <property name="valign">center</property>
+                            <property name="vexpand">True</property>
+                            <property name="can-shrink">False</property>
+                            <property name="content-fit">cover</property>
+                          </object>
+                        </property>
                       </object>
-                    </property>
+                    </child>
+                    <child>
+                      <object class="GtkBox" id="emblems_box">
+                        <property name="orientation">vertical</property>
+                        <property name="halign">end</property>
+                        <property name="spacing">6</property>
+                        <property name="margin-start">2</property>
+                        <property name="width-request">16</property>
+                        <style>
+                          <class name="dim-label"/>
+                        </style>
+                      </object>
+                    </child>
                   </object>
                 </child>
-                <child>
-                  <object class="GtkBox" id="emblems_box">
-                    <property name="orientation">vertical</property>
+                <child type="overlay">
+                  <object class="GtkRevealer" id="star_revealer">
+                    <property name="transition-type">crossfade</property>
                     <property name="halign">end</property>
-                    <property name="spacing">6</property>
-                    <property name="margin-start">2</property>
-                    <property name="width-request">16</property>
-                    <style>
-                      <class name="dim-label"/>
-                    </style>
+                    <property name="valign">start</property>
+                    <property name="reveal-child">False</property>
+                    <property name="child">
+                      <object class="GtkButton" id="star_button">
+                        <property name="icon-name">non-starred-symbolic</property>
+                        <property name="has-frame">False</property>
+                        <signal name="clicked" handler="on_star_button_clicked" swapped="true"/>
+                        <style>
+                          <class name="dim-label"/>
+                          <class name="star"/>
+                          <class name="circular"/>
+                          <class name="grid-star"/>
+                        </style>
+                      </object>
+                    </property>
                   </object>
                 </child>
               </object>

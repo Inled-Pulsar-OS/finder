@@ -120,6 +120,7 @@ void                nautilus_files_view_change                           (Nautil
  * that observers might want to connect with.
  */
 gboolean            nautilus_files_view_get_loading                      (NautilusFilesView *view);
+GActionGroup *      nautilus_files_view_get_action_group                 (NautilusFilesView *view);
 
 /* Hooks for subclasses to call. These are normally called only by
  * NautilusFilesView and its subclasses

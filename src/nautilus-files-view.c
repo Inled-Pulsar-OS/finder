@@ -797,6 +797,16 @@ real_end_loading (NautilusFilesView *self,
  * link and paste operations.
  */
 
+GActionGroup *
+nautilus_files_view_get_action_group (NautilusFilesView *view)
+{
+    g_return_val_if_fail (NAUTILUS_IS_FILES_VIEW (view), NULL);
+
+    NautilusFilesViewPrivate *priv = nautilus_files_view_get_instance_private (view);
+
+    return priv->view_action_group;
+}
+
 char *
 nautilus_files_view_get_backing_uri (NautilusFilesView *view)
 {
@@ -1802,6 +1812,8 @@ action_set_folder_color (GSimpleAction *action,
     g_autolist (NautilusFile) selection = NULL;
     const gchar *color = NULL;
     NautilusFilesViewPrivate *priv;
+    gboolean clear_color;
+    GList *targets = NULL;
 
     if (parameter != NULL)
     {
@@ -1812,27 +1824,40 @@ action_set_folder_color (GSimpleAction *action,
     priv = nautilus_files_view_get_instance_private (view);
     selection = nautilus_view_get_selection (NAUTILUS_VIEW (view));
 
-    if (color == NULL || g_strcmp0 (color, "none") == 0 || g_strcmp0 (color, "") == 0)
+    /* With no selection, act on the current folder itself. */
+    if (selection != NULL)
     {
-        nautilus_tag_manager_unstar_files (nautilus_tag_manager_get (),
-                                           G_OBJECT (view),
-                                           selection,
-                                           NULL,
-                                           priv->starred_cancellable);
+        targets = nautilus_file_list_copy (selection);
     }
-    else
+    else if (priv->location != NULL &&
+             g_file_has_uri_scheme (priv->location, "file"))
     {
-        nautilus_tag_manager_star_files (nautilus_tag_manager_get (),
-                                         G_OBJECT (view),
-                                         selection,
-                                         NULL,
-                                         priv->starred_cancellable);
+        NautilusFile *directory_as_file = nautilus_file_get_existing (priv->location);
+
+        if (directory_as_file != NULL)
+        {
+            targets = g_list_prepend (NULL, directory_as_file);
+        }
     }
 
-    for (GList *l = selection; l != NULL; l = l->next)
+    if (targets == NULL)
+    {
+        return;
+    }
+
+    clear_color = (color == NULL || g_strcmp0 (color, "none") == 0 || g_strcmp0 (color, "") == 0);
+
+    g_debug ("set-folder-color: '%s' on %d targets",
+             clear_color ? "(clear)" : color,
+             g_list_length (targets));
+
+    /* Tags and starring are fully independent: coloring an item must never
+     * change its starred state (Finder-like semantics). */
+
+    for (GList *l = targets; l != NULL; l = l->next)
     {
         NautilusFile *file = NAUTILUS_FILE (l->data);
-        if (color == NULL || g_strcmp0 (color, "none") == 0 || g_strcmp0 (color, "") == 0)
+        if (clear_color)
         {
             nautilus_file_set_metadata (file, NAUTILUS_METADATA_KEY_CUSTOM_ICON_NAME, NULL, NULL);
             nautilus_file_set_metadata (file, "folder-color", NULL, NULL);
@@ -1846,6 +1871,14 @@ action_set_folder_color (GSimpleAction *action,
         nautilus_file_invalidate_all_attributes (file);
         nautilus_file_changed (file);
     }
+
+    /* Register the color so that tag views list every colored item,
+     * starred or not. */
+    nautilus_tag_manager_set_files_color (nautilus_tag_manager_get (),
+                                          targets,
+                                          clear_color ? NULL : color);
+
+    nautilus_file_list_free (targets);
 }
 
 

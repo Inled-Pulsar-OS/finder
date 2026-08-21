@@ -1,6 +1,53 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <requires lib="gtk" version="4.0"/>
+  <menu id="tags_menu">
+    <section>
+      <attribute name="display-hint">inline-buttons</attribute>
+      <item>
+        <attribute name="label" translatable="yes">🔴 Red</attribute>
+        <attribute name="action">view.set-folder-color</attribute>
+        <attribute name="target">red</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">🟠 Orange</attribute>
+        <attribute name="action">view.set-folder-color</attribute>
+        <attribute name="target">orange</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">🟡 Yellow</attribute>
+        <attribute name="action">view.set-folder-color</attribute>
+        <attribute name="target">yellow</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">🟢 Green</attribute>
+        <attribute name="action">view.set-folder-color</attribute>
+        <attribute name="target">green</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">🔵 Blue</attribute>
+        <attribute name="action">view.set-folder-color</attribute>
+        <attribute name="target">blue</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">🟣 Purple</attribute>
+        <attribute name="action">view.set-folder-color</attribute>
+        <attribute name="target">purple</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">⚪ Gray</attribute>
+        <attribute name="action">view.set-folder-color</attribute>
+        <attribute name="target">grey</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">Reset Color &amp; Tags</attribute>
+        <attribute name="action">view.set-folder-color</attribute>
+        <attribute name="target">none</attribute>
+      </item>
+    </section>
+  </menu>
   <template class="NautilusToolbar" parent="AdwBin">
     <child>
       <object class="AdwHeaderBar">
@@ -123,23 +170,34 @@
           </object>
         </child>
 
-        <!-- Tags Button (Edit Tags) -->
+        <!-- Share + Tags unified pill -->
         <child type="end">
-          <object class="GtkButton" id="tag_button">
-            <property name="icon-name">tag-symbolic</property>
-            <property name="tooltip-text" translatable="yes">Edit Tags</property>
-            <property name="action-name">slot.star-current-directory</property>
-            <property name="focus-on-click">false</property>
-          </object>
-        </child>
-
-        <!-- Share Button -->
-        <child type="end">
-          <object class="GtkButton" id="share_button">
-            <property name="icon-name">emblem-shared-symbolic</property>
-            <property name="tooltip-text" translatable="yes">Share</property>
-            <property name="action-name">view.send-email</property>
-            <property name="focus-on-click">false</property>
+          <object class="GtkBox" id="share_tags_pill">
+            <property name="valign">center</property>
+            <style>
+              <class name="finder-pill-segmented"/>
+            </style>
+            <child>
+              <object class="GtkButton" id="share_button">
+                <property name="icon-name">emblem-shared-symbolic</property>
+                <property name="tooltip-text" translatable="yes">Share</property>
+                <property name="action-name">view.send-email</property>
+                <property name="focus-on-click">false</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkMenuButton" id="tag_button">
+                <property name="icon-name">tag-symbolic</property>
+                <property name="tooltip-text" translatable="yes">Tags</property>
+                <property name="always-show-arrow">false</property>
+                <property name="focus-on-click">false</property>
+                <property name="popover">
+                  <object class="GtkPopoverMenu">
+                    <property name="menu-model">tags_menu</property>
+                  </object>
+                </property>
+              </object>
+            </child>
           </object>
         </child>
 

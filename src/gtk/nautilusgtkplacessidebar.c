@@ -1138,6 +1138,7 @@ update_places (NautilusGtkPlacesSidebar *sidebar)
       NautilusGtkPlacesSectionType mount_section = NAUTILUS_GTK_PLACES_SECTION_MOUNTS;
       if (g_str_has_prefix (mount_uri, "google-drive://") ||
           g_str_has_prefix (mount_uri, "onedrive://") ||
+          g_str_has_prefix (mount_uri, "icloud://") ||
           g_str_has_prefix (mount_uri, "nextcloud://") ||
           g_str_has_prefix (mount_uri, "owncloud://") ||
           g_str_has_prefix (mount_uri, "dav://") ||
@@ -1160,6 +1161,18 @@ update_places (NautilusGtkPlacesSidebar *sidebar)
 
   g_list_free_full (network_volumes, g_object_unref);
   g_list_free_full (network_mounts, g_object_unref);
+
+  /* Entry point to configure online accounts (Google Drive, Nextcloud…). */
+  {
+    GIcon *goa_icon = g_themed_icon_new_with_default_fallbacks ("avatar-default-symbolic");
+    add_place (sidebar, NAUTILUS_GTK_PLACES_BUILT_IN,
+               NAUTILUS_GTK_PLACES_SECTION_CLOUD,
+               _("Add Online Account…"), goa_icon, NULL,
+               "goa-add://account",
+               NULL, NULL, NULL, NULL, 0,
+               _("Add Online Account…"));
+    g_object_unref (goa_icon);
+  }
 
   /* Add macOS style Tags Section */
   {
@@ -1933,6 +1946,20 @@ open_row (NautilusGtkSidebarRow      *row,
                 "drive", &drive,
                 "volume", &volume,
                 NULL);
+
+  if (uri != NULL && g_str_has_prefix (uri, "goa-add://"))
+    {
+      g_autoptr (GError) error = NULL;
+
+      g_object_unref (sidebar);
+      g_free (uri);
+
+      if (!g_spawn_command_line_async ("gnome-control-center online-accounts", &error))
+        {
+          g_warning ("Unable to launch online accounts settings: %s", error->message);
+        }
+      return;
+    }
 
   if (uri != NULL)
     {

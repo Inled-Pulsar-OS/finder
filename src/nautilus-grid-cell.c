@@ -6,6 +6,8 @@
 
 #include "nautilus-grid-cell.h"
 
+#include <glib/gi18n.h>
+
 #include "nautilus-global-preferences.h"
 #include "nautilus-tag-manager.h"
 #include "nautilus-thumbnails.h"
@@ -25,6 +27,9 @@ struct _NautilusGridCell
     GtkWidget *first_caption;
     GtkWidget *second_caption;
     GtkWidget *third_caption;
+    GtkWidget *star_button;
+    GtkWidget *star_revealer;
+    gboolean pointer_over;
 };
 
 G_DEFINE_TYPE (NautilusGridCell, nautilus_grid_cell, NAUTILUS_TYPE_VIEW_CELL)
@@ -104,12 +109,10 @@ update_emblems (NautilusGridCell *self)
     GtkWidget *child;
     GtkIconTheme *theme;
     g_autolist (GIcon) emblems = NULL;
-    g_autofree gchar *file_uri = NULL;
 
     item = nautilus_view_cell_get_item (NAUTILUS_VIEW_CELL (self));
     g_return_if_fail (item != NULL);
     file = nautilus_view_item_get_file (item);
-    file_uri = nautilus_file_get_uri (file);
 
     /* Remove old emblems. */
     while ((child = gtk_widget_get_first_child (self->emblems_box)) != NULL)
@@ -117,11 +120,8 @@ update_emblems (NautilusGridCell *self)
         gtk_box_remove (GTK_BOX (self->emblems_box), child);
     }
 
-    if (nautilus_tag_manager_file_is_starred (nautilus_tag_manager_get (), file_uri))
-    {
-        gtk_box_append (GTK_BOX (self->emblems_box),
-                        gtk_image_new_from_icon_name ("starred-symbolic"));
-    }
+    /* The starring state is shown by the interactive star button overlay,
+     * so no static star emblem is added here (it would be duplicated). */
 
     theme = gtk_icon_theme_get_for_display (gdk_display_get_default ());
     emblems = nautilus_file_get_emblem_icons (file);
@@ -141,11 +141,94 @@ update_emblems (NautilusGridCell *self)
 }
 
 static void
+update_star_button (NautilusGridCell *self)
+{
+    g_autoptr (NautilusViewItem) item = NULL;
+    NautilusFile *file;
+    g_autofree gchar *file_uri = NULL;
+    gboolean is_starred;
+    gboolean show;
+
+    item = nautilus_view_cell_get_item (NAUTILUS_VIEW_CELL (self));
+    if (item == NULL)
+    {
+        return;
+    }
+    file = nautilus_view_item_get_file (item);
+    file_uri = nautilus_file_get_uri (file);
+
+    is_starred = nautilus_tag_manager_file_is_starred (nautilus_tag_manager_get (),
+                                                       file_uri);
+
+    show = is_starred || self->pointer_over;
+    gtk_revealer_set_reveal_child (GTK_REVEALER (self->star_revealer), show);
+
+    gtk_button_set_icon_name (GTK_BUTTON (self->star_button),
+                              is_starred ? "starred-symbolic" : "non-starred-symbolic");
+    gtk_widget_set_tooltip_text (self->star_button,
+                                 is_starred ? _("Unstar") : _("Star"));
+}
+
+static void
+on_star_button_clicked (NautilusGridCell *self)
+{
+    NautilusTagManager *tag_manager = nautilus_tag_manager_get ();
+    g_autoptr (NautilusViewItem) item = NULL;
+    NautilusFile *file;
+    g_autofree gchar *uri = NULL;
+
+    item = nautilus_view_cell_get_item (NAUTILUS_VIEW_CELL (self));
+    g_return_if_fail (item != NULL);
+    file = nautilus_view_item_get_file (item);
+    uri = nautilus_file_get_uri (file);
+
+    if (nautilus_tag_manager_file_is_starred (tag_manager, uri))
+    {
+        nautilus_tag_manager_unstar_files (tag_manager,
+                                           G_OBJECT (item),
+                                           &(GList){ .data = file },
+                                           NULL,
+                                           NULL);
+    }
+    else
+    {
+        nautilus_tag_manager_star_files (tag_manager,
+                                         G_OBJECT (item),
+                                         &(GList){ .data = file },
+                                         NULL,
+                                         NULL);
+    }
+}
+
+static void
+on_grid_cell_motion_enter (GtkEventControllerMotion *controller,
+                           gdouble                   x,
+                           gdouble                   y,
+                           gpointer                  user_data)
+{
+    NautilusGridCell *self = NAUTILUS_GRID_CELL (user_data);
+
+    self->pointer_over = TRUE;
+    update_star_button (self);
+}
+
+static void
+on_grid_cell_motion_leave (GtkEventControllerMotion *controller,
+                           gpointer                  user_data)
+{
+    NautilusGridCell *self = NAUTILUS_GRID_CELL (user_data);
+
+    self->pointer_over = FALSE;
+    update_star_button (self);
+}
+
+static void
 on_file_changed (NautilusGridCell *self)
 {
     update_icon (self);
     update_emblems (self);
     update_captions (self);
+    update_star_button (self);
 }
 
 static void
@@ -221,6 +304,7 @@ on_starred_changed (NautilusTagManager *tag_manager,
     if (g_list_find (changed_files, file))
     {
         update_emblems (self);
+        update_star_button (self);
     }
 }
 
@@ -281,8 +365,11 @@ nautilus_grid_cell_class_init (NautilusGridCellClass *klass)
     gtk_widget_class_bind_template_child (widget_class, NautilusGridCell, first_caption);
     gtk_widget_class_bind_template_child (widget_class, NautilusGridCell, second_caption);
     gtk_widget_class_bind_template_child (widget_class, NautilusGridCell, third_caption);
+    gtk_widget_class_bind_template_child (widget_class, NautilusGridCell, star_button);
+    gtk_widget_class_bind_template_child (widget_class, NautilusGridCell, star_revealer);
 
     gtk_widget_class_bind_template_callback (widget_class, on_label_query_tooltip);
+    gtk_widget_class_bind_template_callback (widget_class, on_star_button_clicked);
 
     gtk_widget_class_set_accessible_role (widget_class, GTK_ACCESSIBLE_ROLE_GRID_CELL);
 }
@@ -290,12 +377,21 @@ nautilus_grid_cell_class_init (NautilusGridCellClass *klass)
 static void
 nautilus_grid_cell_init (NautilusGridCell *self)
 {
+    GtkEventController *motion_controller;
+
     gtk_widget_init_template (GTK_WIDGET (self));
 
     g_signal_connect (self, "map", G_CALLBACK (on_map_changed), GINT_TO_POINTER (TRUE));
     g_signal_connect (self, "unmap", G_CALLBACK (on_map_changed), GINT_TO_POINTER (FALSE));
     g_signal_connect (self, "notify::icon-size",
                       G_CALLBACK (on_icon_size_changed), NULL);
+
+    motion_controller = gtk_event_controller_motion_new ();
+    g_signal_connect (motion_controller, "enter",
+                      G_CALLBACK (on_grid_cell_motion_enter), self);
+    g_signal_connect (motion_controller, "leave",
+                      G_CALLBACK (on_grid_cell_motion_leave), self);
+    gtk_widget_add_controller (GTK_WIDGET (self), motion_controller);
 
     g_signal_connect_object (nautilus_tag_manager_get (), "starred-changed",
                              G_CALLBACK (on_starred_changed), self, G_CONNECT_DEFAULT);

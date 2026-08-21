@@ -40,6 +40,7 @@ struct _NautilusTagManager
     TrackerSparqlStatement *query_file_is_starred;
 
     GHashTable *starred_file_uris;
+    GHashTable *colored_file_colors;
     GFile *home;
 
     GList *pending_changed_files;
@@ -65,6 +66,7 @@ typedef struct
 enum
 {
     STARRED_CHANGED,
+    COLORS_CHANGED,
     LAST_SIGNAL
 };
 
@@ -82,7 +84,15 @@ enum
         "        nautilus:starred true . " \
         "}"
 
+/* Keyfile group used to persist the folder color registry. */
+#define FOLDER_COLORS_GROUP "FolderColors"
+
 static guint signals[LAST_SIGNAL];
+
+/* One-time startup migration: seed the folder-color registry from legacy
+ * gvfs metadata (metadata::folder-color / custom-icon-name) on starred items,
+ * so old colored items show up in tag views without re-tagging. */
+static void migrate_legacy_colored_metadata (NautilusTagManager *self);
 
 static void
 start_query_or_update (TrackerSparqlConnection *db,
@@ -242,6 +252,10 @@ on_get_starred_files_cursor_callback (GObject      *object,
         }
 
         g_clear_object (&cursor);
+
+        /* The initial starred list is complete: migrate legacy colors now. */
+        migrate_legacy_colored_metadata (self);
+
         return;
     }
 
@@ -376,6 +390,296 @@ nautilus_tag_manager_file_is_starred (NautilusTagManager *self,
                                       const gchar        *file_uri)
 {
     return g_hash_table_contains (self->starred_file_uris, file_uri);
+}
+
+static gchar *
+get_folder_colors_store_path (void)
+{
+    return g_build_filename (g_get_user_data_dir (), "nautilus", "folder-colors.conf", NULL);
+}
+
+static void
+save_colored_files (NautilusTagManager *self)
+{
+    g_autofree gchar *store_path = NULL;
+    g_autoptr (GKeyFile) keyfile = NULL;
+    GHashTableIter iter;
+    gpointer key, value;
+
+    keyfile = g_key_file_new ();
+    g_hash_table_iter_init (&iter, self->colored_file_colors);
+    while (g_hash_table_iter_next (&iter, &key, &value))
+    {
+        g_key_file_set_string (keyfile, FOLDER_COLORS_GROUP, key, value);
+    }
+
+    store_path = get_folder_colors_store_path ();
+    if (!g_key_file_save_to_file (keyfile, store_path, NULL))
+    {
+        g_warning ("Could not save folder colors to %s", store_path);
+    }
+}
+
+static void
+load_colored_files (NautilusTagManager *self)
+{
+    g_autofree gchar *store_path = NULL;
+    g_autoptr (GKeyFile) keyfile = NULL;
+    g_auto (GStrv) uris = NULL;
+    gsize n_uris = 0;
+    g_autoptr (GError) error = NULL;
+
+    store_path = get_folder_colors_store_path ();
+    if (!g_file_test (store_path, G_FILE_TEST_EXISTS))
+    {
+        return;
+    }
+
+    keyfile = g_key_file_new ();
+    if (!g_key_file_load_from_file (keyfile, store_path, G_KEY_FILE_NONE, &error))
+    {
+        g_warning ("Could not load folder colors from %s: %s", store_path, error->message);
+        return;
+    }
+
+    uris = g_key_file_get_keys (keyfile, FOLDER_COLORS_GROUP, &n_uris, &error);
+    if (error != NULL)
+    {
+        g_warning ("Could not read folder colors group from %s: %s", store_path, error->message);
+        return;
+    }
+
+    for (gsize i = 0; i < n_uris; i++)
+    {
+        g_autofree gchar *color = g_key_file_get_string (keyfile, FOLDER_COLORS_GROUP,
+                                                         uris[i], NULL);
+        if (color != NULL && *color != '\0')
+        {
+            g_hash_table_replace (self->colored_file_colors,
+                                  g_strdup (uris[i]),
+                                  g_steal_pointer (&color));
+        }
+    }
+}
+
+typedef struct
+{
+    NautilusTagManager *tag_manager;
+    guint pending;
+    GPtrArray *colored_uris;
+} MigrateData;
+
+static void
+migrate_check_done (MigrateData *data)
+{
+    NautilusTagManager *self = data->tag_manager;
+    GList *changed_files = NULL;
+
+    if (data->pending > 0)
+    {
+        return;
+    }
+
+    for (guint i = 0; i < data->colored_uris->len; i++)
+    {
+        const gchar *uri = g_ptr_array_index (data->colored_uris, i);
+        g_autoptr (GFile) location = g_file_new_for_uri (uri);
+
+        changed_files = g_list_prepend (changed_files, nautilus_file_get (location));
+    }
+
+    save_colored_files (self);
+
+    if (changed_files != NULL)
+    {
+        g_signal_emit_by_name (self, "colors-changed", changed_files);
+    }
+
+    nautilus_file_list_free (changed_files);
+    g_ptr_array_unref (data->colored_uris);
+    g_free (data);
+}
+
+static void
+on_migrate_info_ready (GObject      *source,
+                       GAsyncResult *result,
+                       gpointer      user_data)
+{
+    MigrateData *data = user_data;
+    NautilusTagManager *self = data->tag_manager;
+    g_autoptr (GFileInfo) info = NULL;
+    const gchar *uri;
+    const gchar *color;
+
+    info = g_file_query_info_finish (G_FILE (source), result, NULL);
+
+    if (info != NULL)
+    {
+        color = g_file_info_get_attribute_string (info, "metadata::folder-color");
+
+        /* Legacy fallback: the tint was also stored as custom icon name. */
+        if (color == NULL || *color == '\0')
+        {
+            const gchar *icon = g_file_info_get_attribute_string (info,
+                                                                  "metadata::custom-icon-name");
+            if (icon != NULL && g_str_has_prefix (icon, "folder-"))
+            {
+                color = icon + strlen ("folder-");
+            }
+        }
+
+        if (color != NULL && *color != '\0')
+        {
+            uri = g_file_get_uri (G_FILE (source));
+
+            if (g_hash_table_lookup (self->colored_file_colors, uri) == NULL)
+            {
+                g_hash_table_replace (self->colored_file_colors,
+                                      g_strdup (uri),
+                                      g_strdup (color));
+                g_ptr_array_add (data->colored_uris, g_strdup (uri));
+            }
+        }
+    }
+
+    data->pending--;
+    migrate_check_done (data);
+}
+
+static void
+migrate_legacy_colored_metadata (NautilusTagManager *self)
+{
+    MigrateData *data;
+    GHashTableIter iter;
+    gpointer key;
+
+    if (!self->database_ok)
+    {
+        return;
+    }
+
+    data = g_new0 (MigrateData, 1);
+    data->tag_manager = self;
+    data->colored_uris = g_ptr_array_new_with_free_func (g_free);
+
+    g_hash_table_iter_init (&iter, self->starred_file_uris);
+    while (g_hash_table_iter_next (&iter, &key, NULL))
+    {
+        const gchar *uri = key;
+        g_autoptr (GFile) location = NULL;
+
+        if (g_hash_table_lookup (self->colored_file_colors, uri) != NULL)
+        {
+            continue;
+        }
+
+        location = g_file_new_for_uri (uri);
+        data->pending++;
+        g_file_query_info_async (location,
+                                 "metadata::folder-color,metadata::custom-icon-name",
+                                 G_FILE_QUERY_INFO_NONE,
+                                 G_PRIORITY_DEFAULT,
+                                 self->cancellable,
+                                 on_migrate_info_ready,
+                                 data);
+    }
+
+    migrate_check_done (data);
+}
+
+/**
+ * nautilus_tag_manager_file_get_color:
+ * @self: The tag manager singleton
+ * @file_uri: The URI of the file
+ *
+ * Returns: (transfer none) (nullable): the color assigned to the file, or
+ * %NULL if the file has no color. The string is owned by the tag manager and
+ * is valid until the color of the file changes.
+ */
+const gchar *
+nautilus_tag_manager_file_get_color (NautilusTagManager *self,
+                                     const gchar        *file_uri)
+{
+    return g_hash_table_lookup (self->colored_file_colors, file_uri);
+}
+
+/**
+ * nautilus_tag_manager_get_colored_files:
+ * @self: The tag manager singleton
+ * @color: (nullable): the color to filter by, or %NULL to get all colored files.
+ *
+ * Returns: (element-type NautilusFile) (transfer full): A list of the colored NautilusFile.
+ */
+GList *
+nautilus_tag_manager_get_colored_files (NautilusTagManager *self,
+                                        const gchar        *color)
+{
+    GHashTableIter iter;
+    gpointer key, value;
+    GList *colored_files = NULL;
+
+    g_hash_table_iter_init (&iter, self->colored_file_colors);
+    while (g_hash_table_iter_next (&iter, &key, &value))
+    {
+        const gchar *uri = key;
+        g_autoptr (GFile) location = NULL;
+        NautilusFile *file;
+
+        if (color != NULL && g_strcmp0 (value, color) != 0)
+        {
+            continue;
+        }
+
+        location = g_file_new_for_uri (uri);
+        file = nautilus_file_get (location);
+
+        if (file != NULL)
+        {
+            colored_files = g_list_prepend (colored_files, file);
+        }
+    }
+
+    return colored_files;
+}
+
+/**
+ * nautilus_tag_manager_set_files_color:
+ * @self: The tag manager singleton
+ * @files: (element-type NautilusFile): list of files to color
+ * @color: (nullable): the color to assign, or %NULL to remove the color
+ */
+void
+nautilus_tag_manager_set_files_color (NautilusTagManager *self,
+                                      GList              *files,
+                                      const gchar        *color)
+{
+    GList *changed_files = NULL;
+
+    for (GList *l = files; l != NULL; l = l->next)
+    {
+        NautilusFile *file = NAUTILUS_FILE (l->data);
+        g_autofree gchar *uri = nautilus_file_get_uri (file);
+
+        changed_files = g_list_prepend (changed_files, nautilus_file_ref (file));
+
+        if (color == NULL || *color == '\0' || g_strcmp0 (color, "none") == 0)
+        {
+            g_hash_table_remove (self->colored_file_colors, uri);
+        }
+        else
+        {
+            g_hash_table_replace (self->colored_file_colors,
+                                  g_strdup (uri),
+                                  g_strdup (color));
+        }
+    }
+
+    save_colored_files (self);
+
+    if (changed_files != NULL)
+    {
+        g_signal_emit_by_name (self, "colors-changed", changed_files);
+    }
 }
 
 void
@@ -554,6 +858,7 @@ nautilus_tag_manager_finalize (GObject *object)
     g_clear_pointer (&self->pending_changed_files, nautilus_file_list_free);
 
     g_hash_table_destroy (self->starred_file_uris);
+    g_hash_table_destroy (self->colored_file_colors);
     g_clear_object (&self->home);
 
     G_OBJECT_CLASS (nautilus_tag_manager_parent_class)->finalize (object);
@@ -578,6 +883,17 @@ nautilus_tag_manager_class_init (NautilusTagManagerClass *klass)
                                              G_TYPE_NONE,
                                              1,
                                              G_TYPE_POINTER);
+
+    signals[COLORS_CHANGED] = g_signal_new ("colors-changed",
+                                            NAUTILUS_TYPE_TAG_MANAGER,
+                                            G_SIGNAL_RUN_LAST,
+                                            0,
+                                            NULL,
+                                            NULL,
+                                            g_cclosure_marshal_VOID__POINTER,
+                                            G_TYPE_NONE,
+                                            1,
+                                            G_TYPE_POINTER);
 }
 
 /**
@@ -646,7 +962,7 @@ setup_database (NautilusTagManager  *self,
     if (!g_file_test (ontology_path, G_FILE_TEST_IS_DIR))
     {
         const gchar *try_paths[] = {
-            "/home/jaime/Documentos/pulsar/PKG/nautilus-finder/data/ontology",
+            "/home/jaime/Documentos/pulsar/PKG/nautilus/data/ontology",
             "/usr/local/share/nautilus/ontology",
             "/usr/share/nautilus/ontology"
         };
@@ -711,7 +1027,13 @@ nautilus_tag_manager_init (NautilusTagManager *self)
                                                      (GDestroyNotify) g_free,
                                                      /* values are keys */
                                                      NULL);
+    self->colored_file_colors = g_hash_table_new_full (g_str_hash,
+                                                       g_str_equal,
+                                                       (GDestroyNotify) g_free,
+                                                       (GDestroyNotify) g_free);
     self->home = g_file_new_for_path (g_get_home_dir ());
+
+    load_colored_files (self);
 
     if (make_dummy_instance)
     {

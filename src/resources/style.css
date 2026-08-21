@@ -293,6 +293,21 @@ button.star:hover {
   opacity: 1;
 }
 
+/* Star button overlay in grid (icon) view */
+.nautilus-grid-view button.grid-star {
+  min-height: 22px;
+  min-width: 22px;
+  padding: 0;
+  margin: 3px;
+  opacity: 0.75;
+}
+.nautilus-grid-view button.grid-star:hover {
+  opacity: 1;
+}
+.nautilus-grid-view button.grid-star.starred image {
+  color: var(--accent-bg-color, #f5c211);
+}
+
 @keyframes rotate_star {
   from { -gtk-icon-transform: rotate(-72deg); }
   to {}
@@ -408,35 +423,43 @@ NautilusViewControls > box {
   box-shadow: none !important;
 }
 
+/* Unified macOS-style capsule grouping buttons. alpha() is used instead of
+ * color-mix() so the capsule renders on every GTK 4.x release. */
 .finder-pill-segmented {
-  background-color: color-mix(in srgb, currentColor 10%, transparent) !important;
+  background-color: alpha(currentColor, 0.10) !important;
+  background-image: none !important;
   border-radius: 9999px !important;
   padding: 3px !important;
-  border: 1px solid color-mix(in srgb, currentColor 8%, transparent) !important;
+  border: 1px solid alpha(currentColor, 0.08) !important;
   box-shadow: none !important;
 }
 
 .finder-pill-segmented > togglebutton,
-.finder-pill-segmented > button {
+.finder-pill-segmented > button,
+.finder-pill-segmented > menubutton,
+.finder-pill-segmented > menubutton > button {
   border-radius: 9999px !important;
   min-height: 24px !important;
   min-width: 30px !important;
   padding: 2px 8px !important;
-  margin: 0 1px !important;
+  margin: 0 !important;
   border: none !important;
   background: transparent !important;
+  background-image: none !important;
+  outline: none !important;
   box-shadow: none !important;
 }
 
 .finder-pill-segmented > togglebutton:checked,
 .finder-pill-segmented > button:checked {
-  background-color: color-mix(in srgb, currentColor 22%, transparent) !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+  background-color: alpha(currentColor, 0.20) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
 }
 
 .finder-pill-segmented > togglebutton:hover:not(:checked),
-.finder-pill-segmented > button:hover:not(:checked) {
-  background-color: color-mix(in srgb, currentColor 12%, transparent) !important;
+.finder-pill-segmented > button:hover:not(:checked),
+.finder-pill-segmented > menubutton:hover > button {
+  background-color: alpha(currentColor, 0.12) !important;
 }
 
 /* MacTahoe Toolbar & Navigation Elements */

@@ -1,0 +1,14 @@
+Package: nautilus
+Version: 48.7
+Section: gnome
+Priority: optional
+Architecture: amd64
+Maintainer: Jaime <info@inled.es>
+Depends: bubblewrap, desktop-file-utils (>= 0.7), eject, gsettings-desktop-schemas (>= 3.8.0), gvfs (>= 1.3.2), gvfs-backends, gnome-online-accounts, libglib2.0-data, shared-mime-info (>= 0.50), localsearch, xdg-user-dirs-gtk, libadwaita-1-0 (>= 1.6~beta), libc6 (>= 2.38), libcairo2 (>= 1.2.4), libcloudproviders0 (>= 0.3.1), libgdk-pixbuf-2.0-0 (>= 2.25.2), libgexiv2-2 (>= 0.14.2), libglib2.0-0t64 (>= 2.83.0), libgnome-autoar-0-0 (>= 0.4.4), libgnome-desktop-4-2t64 (>= 43~), libgraphene-1.0-0 (>= 1.5.4), libgstreamer-plugins-base1.0-0 (>= 1.0.0), libgstreamer1.0-0 (>= 1.0.0), libgtk-4-1 (>= 4.17.5), libpango-1.0-0 (>= 1.42), libportal-gtk4-1 (>= 0.7), libportal1 (>= 0.7), libtinysparql-3.0-0 (>= 3.8.1), libwayland-client0 (>= 1.20.0), libx11-6
+Provides: nautilus-data (= 48.7), libnautilus-extension4 (= 48.7), gir1.2-nautilus-4.0 (= 48.7)
+Conflicts: nautilus-data, libnautilus-extension4, gir1.2-nautilus-4.0
+Replaces: nautilus-data, libnautilus-extension4, gir1.2-nautilus-4.0
+Description: GNOME Files (Finder) with Pulsar OS customization.
+ Custom build of Nautilus (GNOME Files) with the Pulsar OS Finder look and feel.
+ Compiled from the Pulsar OS fork source; replaces the stock Debian nautilus,
+ its data package and the extension library/GIR bindings (ABI compatible).

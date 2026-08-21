@@ -42,7 +42,7 @@
         <property name="spacing">6</property>
         <property name="valign">center</property>
 
-        <!-- Segmented Finder Views (Icons, List) with macOS pill container -->
+        <!-- Segmented Finder Views (Icons, List, Sort) with macOS pill container -->
         <child>
           <object class="GtkBox">
             <style>
@@ -64,41 +64,39 @@
                 <property name="action-target">uint32 1</property>
               </object>
             </child>
-          </object>
-        </child>
-
-        <!-- Grouping / Sorting Dropdown -->
-        <child>
-          <object class="GtkMenuButton" id="view_split_button">
-            <property name="icon-name">view-sort-descending-symbolic</property>
-            <property name="tooltip-text" translatable="yes">View &amp; Grouping Options</property>
-            <property name="popover">
-              <object class="GtkPopoverMenu">
-                <property name="menu-model">view_menu</property>
-                <child type="zoom-out">
-                  <object class="GtkButton">
-                    <property name="icon-name">zoom-out-symbolic</property>
-                    <property name="action-name">view.zoom-out</property>
-                    <property name="tooltip-text" translatable="yes">Zoom Out</property>
-                    <style>
-                      <class name="flat"/>
-                      <class name="circular"/>
-                    </style>
+            <child>
+              <object class="GtkMenuButton" id="view_split_button">
+                <property name="icon-name">view-sort-descending-symbolic</property>
+                <property name="tooltip-text" translatable="yes">View &amp; Grouping Options</property>
+                <property name="popover">
+                  <object class="GtkPopoverMenu">
+                    <property name="menu-model">view_menu</property>
+                    <child type="zoom-out">
+                      <object class="GtkButton">
+                        <property name="icon-name">zoom-out-symbolic</property>
+                        <property name="action-name">view.zoom-out</property>
+                        <property name="tooltip-text" translatable="yes">Zoom Out</property>
+                        <style>
+                          <class name="flat"/>
+                          <class name="circular"/>
+                        </style>
+                      </object>
+                    </child>
+                    <child type="zoom-in">
+                      <object class="GtkButton">
+                        <property name="icon-name">zoom-in-symbolic</property>
+                        <property name="action-name">view.zoom-in</property>
+                        <property name="tooltip-text" translatable="yes">Zoom In</property>
+                        <style>
+                          <class name="flat"/>
+                          <class name="circular"/>
+                        </style>
+                      </object>
+                    </child>
                   </object>
-                </child>
-                <child type="zoom-in">
-                  <object class="GtkButton">
-                    <property name="icon-name">zoom-in-symbolic</property>
-                    <property name="action-name">view.zoom-in</property>
-                    <property name="tooltip-text" translatable="yes">Zoom In</property>
-                    <style>
-                      <class name="flat"/>
-                      <class name="circular"/>
-                    </style>
-                  </object>
-                </child>
+                </property>
               </object>
-            </property>
+            </child>
           </object>
         </child>
       </object>

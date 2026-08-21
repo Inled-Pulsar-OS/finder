@@ -29,6 +29,7 @@
 #include "nautilus-bookmark.h"
 #include "nautilus-global-preferences.h"
 #include "nautilus-history-controls.h"
+#include "nautilus-files-view.h"
 #include "nautilus-location-entry.h"
 #include "nautilus-pathbar.h"
 #include "nautilus-view-controls.h"
@@ -579,6 +580,27 @@ nautilus_toolbar_show_current_location_menu (NautilusToolbar *self)
     nautilus_path_bar_show_current_location_menu (NAUTILUS_PATH_BAR (self->path_bar));
 }
 
+static void
+toolbar_sync_view_actions (NautilusToolbar *self)
+{
+    GActionGroup *group = NULL;
+
+    if (self->window_slot != NULL)
+    {
+        NautilusView *view = nautilus_window_slot_get_current_view (self->window_slot);
+
+        if (NAUTILUS_IS_FILES_VIEW (view))
+        {
+            group = nautilus_files_view_get_action_group (NAUTILUS_FILES_VIEW (view));
+        }
+    }
+
+    /* Header bar popovers are not descendants of the file view widget, so the
+     * "view" action group must also be resolvable from the toolbar subtree
+     * (e.g. for the tag color menu). */
+    gtk_widget_insert_action_group (GTK_WIDGET (self), "view", group);
+}
+
 /* Called from on_window_slot_destroyed(), since bindings and signal handlers
  * are automatically removed once the slot goes away.
  */
@@ -587,6 +609,8 @@ nautilus_toolbar_set_window_slot_real (NautilusToolbar    *self,
                                        NautilusWindowSlot *slot)
 {
     self->window_slot = slot;
+
+    toolbar_sync_view_actions (self);
 
     if (self->window_slot != NULL)
     {

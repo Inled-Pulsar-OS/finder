@@ -50,6 +50,18 @@ void                nautilus_tag_manager_unstar_files       (NautilusTagManager 
 gboolean            nautilus_tag_manager_file_is_starred   (NautilusTagManager *self,
                                                             const gchar        *file_uri);
 
+/* Folder color registry (independent from starring). */
+
+const gchar*        nautilus_tag_manager_file_get_color   (NautilusTagManager *self,
+                                                           const gchar        *file_uri);
+
+GList*              nautilus_tag_manager_get_colored_files (NautilusTagManager *self,
+                                                            const gchar        *color);
+
+void                nautilus_tag_manager_set_files_color   (NautilusTagManager *self,
+                                                            GList              *files,
+                                                            const gchar        *color);
+
 gboolean            nautilus_tag_manager_can_star_contents (NautilusTagManager *self,
                                                             GFile              *directory);
 gboolean            nautilus_tag_manager_can_star_location (NautilusTagManager *self,
