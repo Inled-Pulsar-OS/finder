@@ -754,9 +754,10 @@ nautilus_file_get_internal (GFile    *location,
     parent = g_file_get_parent (location);
 
     self_owned = FALSE;
-    if (parent == NULL)
+    if (parent == NULL || g_file_has_uri_scheme (location, SCHEME_STARRED))
     {
         self_owned = TRUE;
+        g_clear_object (&parent);
         parent = g_object_ref (location);
     }
 

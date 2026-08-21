@@ -166,7 +166,53 @@ nautilus_internal_place_file_constructed (GObject *object)
     }
     else if (NAUTILUS_IS_STARRED_DIRECTORY (file->details->directory))
     {
-        nautilus_file_set_display_name (file, _("Starred"), NULL, TRUE);
+        g_autofree gchar *dir_uri = nautilus_directory_get_uri (file->details->directory);
+        const gchar *tag_color = NULL;
+        if (dir_uri != NULL)
+        {
+            const gchar *after_scheme = dir_uri + strlen (SCHEME_STARRED "://");
+            while (*after_scheme == '/')
+            {
+                after_scheme++;
+            }
+            if (*after_scheme != '\0')
+            {
+                tag_color = after_scheme;
+            }
+        }
+
+        if (tag_color != NULL && g_strcmp0 (tag_color, "red") == 0)
+        {
+            nautilus_file_set_display_name (file, _("Red"), NULL, TRUE);
+        }
+        else if (tag_color != NULL && g_strcmp0 (tag_color, "orange") == 0)
+        {
+            nautilus_file_set_display_name (file, _("Orange"), NULL, TRUE);
+        }
+        else if (tag_color != NULL && g_strcmp0 (tag_color, "yellow") == 0)
+        {
+            nautilus_file_set_display_name (file, _("Yellow"), NULL, TRUE);
+        }
+        else if (tag_color != NULL && g_strcmp0 (tag_color, "green") == 0)
+        {
+            nautilus_file_set_display_name (file, _("Green"), NULL, TRUE);
+        }
+        else if (tag_color != NULL && g_strcmp0 (tag_color, "blue") == 0)
+        {
+            nautilus_file_set_display_name (file, _("Blue"), NULL, TRUE);
+        }
+        else if (tag_color != NULL && g_strcmp0 (tag_color, "purple") == 0)
+        {
+            nautilus_file_set_display_name (file, _("Purple"), NULL, TRUE);
+        }
+        else if (tag_color != NULL && (g_strcmp0 (tag_color, "grey") == 0 || g_strcmp0 (tag_color, "gray") == 0))
+        {
+            nautilus_file_set_display_name (file, _("Gray"), NULL, TRUE);
+        }
+        else
+        {
+            nautilus_file_set_display_name (file, _("Starred"), NULL, TRUE);
+        }
     }
 
     file->details->got_file_info = TRUE;
