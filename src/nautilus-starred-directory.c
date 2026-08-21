@@ -23,6 +23,7 @@
 #include "nautilus-file-utilities.h"
 #include "nautilus-internal-place-file.h"
 #include "nautilus-tag-manager.h"
+#include "nautilus-metadata.h"
 #include "nautilus-scheme.h"
 #include <glib/gi18n.h>
 
@@ -426,6 +427,23 @@ nautilus_starred_directory_set_files (NautilusFavoriteDirectory *self)
     GList *file_list;
     FavoriteMonitor *monitor;
     GList *monitor_list;
+    g_autofree gchar *uri = NULL;
+    g_autofree gchar *target_color = NULL;
+
+    uri = nautilus_directory_get_uri (NAUTILUS_DIRECTORY (self));
+    if (uri != NULL)
+    {
+        /* Check if URI has a color suffix like starred:///red or starred://red */
+        const gchar *after_scheme = uri + strlen (SCHEME_STARRED "://");
+        while (*after_scheme == '/')
+        {
+            after_scheme++;
+        }
+        if (*after_scheme != '\0')
+        {
+            target_color = g_strdup (after_scheme);
+        }
+    }
 
     file_list = NULL;
 
@@ -434,6 +452,21 @@ nautilus_starred_directory_set_files (NautilusFavoriteDirectory *self)
     for (l = starred_files; l != NULL; l = l->next)
     {
         NautilusFile *file = l->data;
+
+        if (target_color != NULL && *target_color != '\0')
+        {
+            const gchar *folder_color = nautilus_file_get_metadata (file, "folder-color", NULL);
+            if (folder_color == NULL || g_strcmp0 (folder_color, target_color) != 0)
+            {
+                /* Check custom-icon-name as fallback e.g. folder-red */
+                const gchar *custom_icon = nautilus_file_get_metadata (file, NAUTILUS_METADATA_KEY_CUSTOM_ICON_NAME, NULL);
+                g_autofree gchar *expected_icon = g_strdup_printf ("folder-%s", target_color);
+                if (custom_icon == NULL || g_strcmp0 (custom_icon, expected_icon) != 0)
+                {
+                    continue;
+                }
+            }
+        }
 
         g_signal_connect (file, "changed", G_CALLBACK (file_changed), self);
 

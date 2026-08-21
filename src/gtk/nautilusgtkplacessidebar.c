@@ -1166,22 +1166,24 @@ update_places (NautilusGtkPlacesSidebar *sidebar)
     struct {
       const char *name;
       const char *color_class;
+      const char *color_code;
     } mac_tags[] = {
-      { N_("Red"), "tag-red" },
-      { N_("Orange"), "tag-orange" },
-      { N_("Yellow"), "tag-yellow" },
-      { N_("Green"), "tag-green" },
-      { N_("Blue"), "tag-blue" },
-      { N_("Purple"), "tag-purple" },
-      { N_("Gray"), "tag-gray" },
+      { N_("Red"), "tag-red", "red" },
+      { N_("Orange"), "tag-orange", "orange" },
+      { N_("Yellow"), "tag-yellow", "yellow" },
+      { N_("Green"), "tag-green", "green" },
+      { N_("Blue"), "tag-blue", "blue" },
+      { N_("Purple"), "tag-purple", "purple" },
+      { N_("Gray"), "tag-gray", "grey" },
     };
 
     for (guint t_idx = 0; t_idx < G_N_ELEMENTS (mac_tags); t_idx++)
       {
         GIcon *tag_icon = g_themed_icon_new_with_default_fallbacks ("media-record-symbolic");
+        g_autofree gchar *tag_uri = g_strdup_printf (SCHEME_STARRED ":///%s", mac_tags[t_idx].color_code);
         GtkWidget *t_row = add_place (sidebar, NAUTILUS_GTK_PLACES_BUILT_IN,
                                       NAUTILUS_GTK_PLACES_SECTION_TAGS,
-                                      _(mac_tags[t_idx].name), tag_icon, NULL, SCHEME_STARRED ":///",
+                                      _(mac_tags[t_idx].name), tag_icon, NULL, tag_uri,
                                       NULL, NULL, NULL, NULL, (int)t_idx,
                                       _(mac_tags[t_idx].name));
         gtk_widget_add_css_class (t_row, mac_tags[t_idx].color_class);
