@@ -270,6 +270,48 @@
         <attribute name="hidden-when">action-disabled</attribute>
       </item>
     </section>
+    <section id="tags-colors-section">
+      <submenu>
+        <attribute name="label" translatable="yes">Tags &amp; Color…</attribute>
+        <section>
+          <item>
+            <attribute name="label" translatable="yes">🔴 Red</attribute>
+            <attribute name="action">view.star</attribute>
+          </item>
+          <item>
+            <attribute name="label" translatable="yes">🟠 Orange</attribute>
+            <attribute name="action">view.star</attribute>
+          </item>
+          <item>
+            <attribute name="label" translatable="yes">🟡 Yellow</attribute>
+            <attribute name="action">view.star</attribute>
+          </item>
+          <item>
+            <attribute name="label" translatable="yes">🟢 Green</attribute>
+            <attribute name="action">view.star</attribute>
+          </item>
+          <item>
+            <attribute name="label" translatable="yes">🔵 Blue</attribute>
+            <attribute name="action">view.star</attribute>
+          </item>
+          <item>
+            <attribute name="label" translatable="yes">🟣 Purple</attribute>
+            <attribute name="action">view.star</attribute>
+          </item>
+          <item>
+            <attribute name="label" translatable="yes">⚪ Gray</attribute>
+            <attribute name="action">view.star</attribute>
+          </item>
+        </section>
+        <section>
+          <item>
+            <attribute name="label" translatable="yes">Remove Tags</attribute>
+            <attribute name="action">view.unstar</attribute>
+            <attribute name="hidden-when">action-disabled</attribute>
+          </item>
+        </section>
+      </submenu>
+    </section>
     <section id="selection-extensions-section"/>
     <section>
       <item>

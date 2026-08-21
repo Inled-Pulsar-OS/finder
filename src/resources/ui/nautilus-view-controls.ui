@@ -37,48 +37,86 @@
   </menu>
   <template class="NautilusViewControls" parent="AdwBin">
     <property name="child">
-      <object class="AdwSplitButton" id="view_split_button">
-        <property name="halign">center</property>
+      <object class="GtkBox">
+        <property name="orientation">horizontal</property>
+        <property name="spacing">6</property>
         <property name="valign">center</property>
-        <property name="dropdown-tooltip" translatable="yes" comments="Translators: This is a noun, meaning the options pertaining to the view.">View Options</property>
-        <property name="action_name">slot.files-view-mode-toggle</property>
-        <property name="popover">
-          <object class="GtkPopoverMenu">
-            <property name="menu-model">view_menu</property>
-            <child type="zoom-out">
-              <object class="GtkButton">
-                <property name="icon-name">zoom-out-symbolic</property>
-                <property name="action-name">view.zoom-out</property>
-                <property name="tooltip-text" translatable="yes">Zoom Out</property>
-                <style>
-                  <class name="flat"/>
-                  <class name="circular"/>
-                </style>
+
+        <!-- Segmented Finder Views (Grid/Icons, List, Column, Gallery) -->
+        <child>
+          <object class="GtkBox">
+            <style>
+              <class name="linked"/>
+            </style>
+            <child>
+              <object class="GtkToggleButton" id="icon_view_button">
+                <property name="icon-name">view-grid-symbolic</property>
+                <property name="tooltip-text" translatable="yes">as Icons</property>
+                <property name="action-name">slot.files-view-mode</property>
+                <property name="action-target">uint32 1</property>
               </object>
             </child>
-            <child type="zoom-in">
-              <object class="GtkButton">
-                <property name="icon-name">zoom-in-symbolic</property>
-                <property name="action-name">view.zoom-in</property>
-                <property name="tooltip-text" translatable="yes">Zoom In</property>
-                <style>
-                  <class name="flat"/>
-                  <class name="circular"/>
-                </style>
+            <child>
+              <object class="GtkToggleButton" id="list_view_button">
+                <property name="icon-name">view-list-symbolic</property>
+                <property name="tooltip-text" translatable="yes">as List</property>
+                <property name="action-name">slot.files-view-mode</property>
+                <property name="action-target">uint32 0</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="column_view_button">
+                <property name="icon-name">view-column-symbolic</property>
+                <property name="tooltip-text" translatable="yes">as Columns</property>
+                <property name="action-name">slot.files-view-mode</property>
+                <property name="action-target">uint32 0</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="gallery_view_button">
+                <property name="icon-name">view-compact-symbolic</property>
+                <property name="tooltip-text" translatable="yes">as Gallery</property>
+                <property name="action-name">slot.files-view-mode</property>
+                <property name="action-target">uint32 1</property>
               </object>
             </child>
           </object>
-        </property>
-        <binding name="icon-name">
-          <lookup name="icon-name">
-            <lookup name="window-slot">NautilusViewControls</lookup>
-          </lookup>
-        </binding>
-        <binding name="tooltip-text">
-          <lookup name="tooltip">
-            <lookup name="window-slot">NautilusViewControls</lookup>
-          </lookup>
-        </binding>
+        </child>
+
+        <!-- Grouping / Sorting Dropdown -->
+        <child>
+          <object class="GtkMenuButton" id="view_split_button">
+            <property name="icon-name">view-sort-descending-symbolic</property>
+            <property name="tooltip-text" translatable="yes">View &amp; Grouping Options</property>
+            <property name="popover">
+              <object class="GtkPopoverMenu">
+                <property name="menu-model">view_menu</property>
+                <child type="zoom-out">
+                  <object class="GtkButton">
+                    <property name="icon-name">zoom-out-symbolic</property>
+                    <property name="action-name">view.zoom-out</property>
+                    <property name="tooltip-text" translatable="yes">Zoom Out</property>
+                    <style>
+                      <class name="flat"/>
+                      <class name="circular"/>
+                    </style>
+                  </object>
+                </child>
+                <child type="zoom-in">
+                  <object class="GtkButton">
+                    <property name="icon-name">zoom-in-symbolic</property>
+                    <property name="action-name">view.zoom-in</property>
+                    <property name="tooltip-text" translatable="yes">Zoom In</property>
+                    <style>
+                      <class name="flat"/>
+                      <class name="circular"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </property>
+          </object>
+        </child>
       </object>
     </property>
   </template>
