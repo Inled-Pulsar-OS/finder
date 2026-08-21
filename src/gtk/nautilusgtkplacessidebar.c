@@ -660,6 +660,63 @@ on_account_updated (GObject    *object,
 #endif
 
 static void
+on_cloud_add_popover_closed (GtkPopover *popover,
+                             gpointer    user_data)
+{
+  gtk_widget_unparent (GTK_WIDGET (popover));
+}
+
+static void
+on_cloud_add_pressed (GtkGestureClick *gesture,
+                      int              n_press,
+                      double           x,
+                      double           y,
+                      gpointer         user_data)
+{
+  NautilusGtkPlacesSidebar *sidebar = NAUTILUS_GTK_PLACES_SIDEBAR (user_data);
+  GtkWidget *row;
+  GtkWidget *popover;
+  GMenu *menu, *section;
+  GMenuItem *item;
+  GdkRectangle rect;
+
+  row = gtk_event_controller_get_widget (GTK_EVENT_CONTROLLER (gesture));
+
+  /* Claim the sequence so the row's default activation does not also run. */
+  gtk_gesture_set_state (GTK_GESTURE (gesture), GTK_EVENT_SEQUENCE_CLAIMED);
+
+  menu = g_menu_new ();
+  section = g_menu_new ();
+
+  item = g_menu_item_new (_("Online Accounts…"), "app.open-online-accounts");
+  g_menu_append_item (section, item);
+  g_object_unref (item);
+
+  item = g_menu_item_new (_("Google Drive…"), "app.setup-cloud-provider::google-drive");
+  g_menu_append_item (section, item);
+  g_object_unref (item);
+
+  item = g_menu_item_new (_("OneDrive…"), "app.setup-cloud-provider::onedrive");
+  g_menu_append_item (section, item);
+  g_object_unref (item);
+
+  g_menu_append_section (menu, NULL, G_MENU_MODEL (section));
+  g_object_unref (section);
+
+  popover = gtk_popover_menu_new_from_model (G_MENU_MODEL (menu));
+  g_object_unref (menu);
+  gtk_widget_set_parent (popover, row);
+  gtk_popover_set_position (GTK_POPOVER (popover), GTK_POS_RIGHT);
+  rect.x = (int) x;
+  rect.y = (int) y;
+  rect.width = 1;
+  rect.height = 1;
+  gtk_popover_set_pointing_to (GTK_POPOVER (popover), &rect);
+  g_signal_connect (popover, "closed", G_CALLBACK (on_cloud_add_popover_closed), NULL);
+  gtk_popover_popup (GTK_POPOVER (popover));
+}
+
+static void
 update_places (NautilusGtkPlacesSidebar *sidebar)
 {
   GList *mounts, *l, *ll;
@@ -1162,16 +1219,79 @@ update_places (NautilusGtkPlacesSidebar *sidebar)
   g_list_free_full (network_volumes, g_object_unref);
   g_list_free_full (network_mounts, g_object_unref);
 
+  /* rclone-backed drives managed by pulsar-cloud (Google Drive, OneDrive…). */
+  {
+    g_autofree gchar *conf_path = g_build_filename (g_get_home_dir (),
+                                                    ".config", "rclone", "rclone.conf",
+                                                    NULL);
+    g_autoptr (GKeyFile) keyfile = g_key_file_new ();
+    g_auto (GStrv) groups = NULL;
+    gsize n_groups = 0;
+
+    if (g_file_test (conf_path, G_FILE_TEST_EXISTS) &&
+        g_key_file_load_from_file (keyfile, conf_path, G_KEY_FILE_NONE, NULL))
+      {
+        groups = g_key_file_get_groups (keyfile, &n_groups);
+        for (gsize i = 0; i < n_groups; i++)
+          {
+            const char *name = groups[i];
+            g_autofree char *backend = NULL;
+            const char *label = name;
+            const char *icon_name = "folder-remote-symbolic";
+            GIcon *icon;
+            g_autofree char *remote_uri = NULL;
+
+            backend = g_key_file_get_string (keyfile, name, "type", NULL);
+
+            if (g_strcmp0 (backend, "drive") == 0)
+              {
+                label = _("Google Drive");
+                icon_name = "google-drive-symbolic,folder-remote-symbolic";
+              }
+            else if (g_strcmp0 (backend, "onedrive") == 0)
+              {
+                label = _("OneDrive");
+                icon_name = "onedrive-symbolic,folder-remote-symbolic";
+              }
+            else if (g_strcmp0 (backend, "dropbox") == 0)
+              {
+                label = _("Dropbox");
+                icon_name = "dropbox-symbolic,folder-remote-symbolic";
+              }
+
+            icon = g_themed_icon_new_with_default_fallbacks (icon_name);
+            remote_uri = g_strdup_printf ("pulsar-cloud://%s", name);
+            add_place (sidebar, NAUTILUS_GTK_PLACES_BUILT_IN,
+                       NAUTILUS_GTK_PLACES_SECTION_CLOUD,
+                       label, icon, NULL, remote_uri,
+                       NULL, NULL, NULL, NULL, 0,
+                       label);
+            g_object_unref (icon);
+          }
+      }
+  }
+
   /* Entry point to configure online accounts (Google Drive, Nextcloud…). */
   {
     GIcon *goa_icon = g_themed_icon_new_with_default_fallbacks ("avatar-default-symbolic");
-    add_place (sidebar, NAUTILUS_GTK_PLACES_BUILT_IN,
-               NAUTILUS_GTK_PLACES_SECTION_CLOUD,
-               _("Add Online Account…"), goa_icon, NULL,
-               "goa-add://account",
-               NULL, NULL, NULL, NULL, 0,
-               _("Add Online Account…"));
+    GtkWidget *goa_row = add_place (sidebar, NAUTILUS_GTK_PLACES_BUILT_IN,
+                                    NAUTILUS_GTK_PLACES_SECTION_CLOUD,
+                                    _("Add Online Account…"), goa_icon, NULL,
+                                    "goa-add://account",
+                                    NULL, NULL, NULL, NULL, 0,
+                                    _("Add Online Account…"));
+    GtkGesture *click;
+
     g_object_unref (goa_icon);
+
+    /* Pressing the row shows the provider menu instead of launching the
+     * settings panel directly. */
+    click = gtk_gesture_click_new ();
+    gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (click), 0);
+    gtk_event_controller_set_propagation_phase (GTK_EVENT_CONTROLLER (click),
+                                                GTK_PHASE_CAPTURE);
+    g_signal_connect (click, "pressed", G_CALLBACK (on_cloud_add_pressed), sidebar);
+    gtk_widget_add_controller (goa_row, GTK_EVENT_CONTROLLER (click));
   }
 
   /* Add macOS style Tags Section */
@@ -1946,6 +2066,26 @@ open_row (NautilusGtkSidebarRow      *row,
                 "drive", &drive,
                 "volume", &volume,
                 NULL);
+
+  if (uri != NULL && g_str_has_prefix (uri, "pulsar-cloud://"))
+    {
+      const char *remote = uri + strlen ("pulsar-cloud://");
+      g_autofree char *command = NULL;
+      GError *spawn_error = NULL;
+
+      command = g_strdup_printf ("pulsar-cloud open %s", remote);
+
+      g_object_unref (sidebar);
+      g_free (uri);
+
+      if (!g_spawn_command_line_async (command, &spawn_error))
+        {
+          g_warning ("Unable to open cloud drive '%s': %s", remote,
+                     spawn_error->message);
+          g_error_free (spawn_error);
+        }
+      return;
+    }
 
   if (uri != NULL && g_str_has_prefix (uri, "goa-add://"))
     {

@@ -790,6 +790,46 @@ action_quit (GSimpleAction *action,
     g_list_free (windows);
 }
 
+static void
+action_open_online_accounts (GSimpleAction *action,
+                             GVariant      *parameter,
+                             gpointer       user_data)
+{
+    g_autoptr (GError) error = NULL;
+
+    if (!g_spawn_command_line_async ("gnome-control-center online-accounts", &error))
+    {
+        g_warning ("Unable to launch online accounts settings: %s", error->message);
+    }
+}
+
+static void
+action_setup_cloud_provider (GSimpleAction *action,
+                             GVariant      *parameter,
+                             gpointer       user_data)
+{
+    const gchar *provider = g_variant_get_string (parameter, NULL);
+    g_autofree gchar *terminal = NULL;
+    g_autofree gchar *command = NULL;
+    g_autoptr (GError) error = NULL;
+
+    terminal = g_find_program_in_path ("gnome-terminal");
+    if (terminal != NULL)
+    {
+        command = g_strdup_printf ("gnome-terminal -- bash -c 'pulsar-cloud setup %s; echo; read -n 1'",
+                                   provider);
+    }
+    else
+    {
+        command = g_strdup_printf ("pulsar-cloud setup %s", provider);
+    }
+
+    if (!g_spawn_command_line_async (command, &error))
+    {
+        g_warning ("Unable to set up cloud provider '%s': %s", provider, error->message);
+    }
+}
+
 static const GActionEntry app_entries[] =
 {
     { .name = "new-window", .activate = action_new_window },
@@ -800,6 +840,8 @@ static const GActionEntry app_entries[] =
     { .name = "help", .activate = action_help },
     { .name = "quit", .activate = action_quit },
     { .name = "kill", .activate = action_kill },
+    { .name = "open-online-accounts", .activate = action_open_online_accounts },
+    { .name = "setup-cloud-provider", .activate = action_setup_cloud_provider, .parameter_type = "s" },
 };
 
 static void
