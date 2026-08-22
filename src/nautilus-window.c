@@ -1726,7 +1726,8 @@ nautilus_window_show_about_dialog (NautilusWindow *window)
 
     const gchar *developers[] =
     {
-        "Pulsar OS Team (Inled)",
+        "JaimeGH (Inled)",
+        "Pulsar OS contributors (see list on os.inled.es)",
         "The GNOME Project (Upstream Nautilus Authors)",
         NULL
     };
@@ -1749,7 +1750,7 @@ nautilus_window_show_about_dialog (NautilusWindow *window)
                                    _("File manager for Pulsar OS, a derivative work based on GNOME Files (Nautilus)."));
     adw_about_dialog_set_website (ADW_ABOUT_DIALOG (dialog), "https://github.com/Inled-Pulsar-OS/finder");
     adw_about_dialog_set_issue_url (ADW_ABOUT_DIALOG (dialog), "https://github.com/Inled-Pulsar-OS/finder/issues");
-    adw_about_dialog_set_support_url (ADW_ABOUT_DIALOG (dialog), "https://inled.es");
+    adw_about_dialog_set_support_url (ADW_ABOUT_DIALOG (dialog), "https://os.inled.es");
     adw_about_dialog_set_license_type (ADW_ABOUT_DIALOG (dialog), GTK_LICENSE_GPL_3_0);
     adw_about_dialog_set_copyright (ADW_ABOUT_DIALOG (dialog), "© 2026 Inled / Pulsar OS Contributors\n© 1999-2026 The Nautilus Authors");
     adw_about_dialog_set_developers (ADW_ABOUT_DIALOG (dialog), developers);
