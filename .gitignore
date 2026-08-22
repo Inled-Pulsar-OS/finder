@@ -1,3 +1,5 @@
 build/
 .*/
 !.gitlab/
+build-stage/
+build-local/
