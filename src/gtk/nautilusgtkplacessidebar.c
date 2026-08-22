@@ -667,35 +667,65 @@ on_cloud_add_popover_closed (GtkPopover *popover,
 }
 
 static void
+on_cloud_command_clicked (GtkButton *button,
+                          gpointer   user_data)
+{
+  const char *command = user_data;
+  GtkWidget *popover;
+  GError *error = NULL;
+
+  popover = gtk_widget_get_ancestor (GTK_WIDGET (button), GTK_TYPE_POPOVER);
+  if (popover != NULL)
+    {
+      gtk_popover_popdown (GTK_POPOVER (popover));
+    }
+
+  if (!g_spawn_command_line_async (command, &error))
+    {
+      g_warning ("Unable to launch '%s': %s", command, error->message);
+      g_error_free (error);
+    }
+}
+
+static GtkWidget *
+cloud_add_menu_button (const char *label,
+                       const char *command)
+{
+  GtkWidget *button;
+
+  button = gtk_button_new_with_label (label);
+  gtk_button_set_has_frame (GTK_BUTTON (button), FALSE);
+  gtk_widget_add_css_class (button, "cloud-menu-item");
+  gtk_widget_set_halign (button, GTK_ALIGN_FILL);
+  g_signal_connect_data (button, "clicked",
+                         G_CALLBACK (on_cloud_command_clicked),
+                         g_strdup (command), (GClosureNotify) g_free, 0);
+
+  return button;
+}
+
+static void
 show_cloud_add_popover (NautilusGtkPlacesSidebar *sidebar,
                         GtkWidget                *row)
 {
   GtkWidget *popover;
-  GMenu *menu, *section;
-  GMenuItem *item;
+  GtkWidget *box;
   int width, height;
   GdkRectangle rect;
 
-  menu = g_menu_new ();
-  section = g_menu_new ();
+  box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+  gtk_box_append (GTK_BOX (box),
+                  cloud_add_menu_button (_("Online Accounts…"),
+                                         "gnome-control-center online-accounts"));
+  gtk_box_append (GTK_BOX (box),
+                  cloud_add_menu_button (_("Google Drive…"),
+                                         "gnome-terminal -- bash -c 'pulsar-cloud setup google-drive; echo; read -n 1'"));
+  gtk_box_append (GTK_BOX (box),
+                  cloud_add_menu_button (_("OneDrive…"),
+                                         "gnome-terminal -- bash -c 'pulsar-cloud setup onedrive; echo; read -n 1'"));
 
-  item = g_menu_item_new (_("Online Accounts…"), "app.open-online-accounts");
-  g_menu_append_item (section, item);
-  g_object_unref (item);
-
-  item = g_menu_item_new (_("Google Drive…"), "app.setup-cloud-provider::google-drive");
-  g_menu_append_item (section, item);
-  g_object_unref (item);
-
-  item = g_menu_item_new (_("OneDrive…"), "app.setup-cloud-provider::onedrive");
-  g_menu_append_item (section, item);
-  g_object_unref (item);
-
-  g_menu_append_section (menu, NULL, G_MENU_MODEL (section));
-  g_object_unref (section);
-
-  popover = gtk_popover_menu_new_from_model (G_MENU_MODEL (menu));
-  g_object_unref (menu);
+  popover = gtk_popover_new ();
+  gtk_popover_set_child (GTK_POPOVER (popover), box);
   gtk_widget_set_parent (popover, row);
   gtk_popover_set_position (GTK_POPOVER (popover), GTK_POS_RIGHT);
   width = gtk_widget_get_width (row);
