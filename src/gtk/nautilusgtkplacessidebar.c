@@ -1269,17 +1269,17 @@ update_places (NautilusGtkPlacesSidebar *sidebar)
             if (g_strcmp0 (backend, "drive") == 0)
               {
                 label = _("Google Drive");
-                icon_name = "google-drive-symbolic,folder-remote-symbolic";
+                icon_name = "google-drive";
               }
             else if (g_strcmp0 (backend, "onedrive") == 0)
               {
                 label = _("OneDrive");
-                icon_name = "onedrive-symbolic,folder-remote-symbolic";
+                icon_name = "onedrive";
               }
             else if (g_strcmp0 (backend, "dropbox") == 0)
               {
                 label = _("Dropbox");
-                icon_name = "dropbox-symbolic,folder-remote-symbolic";
+                icon_name = "dropbox";
               }
 
             icon = g_themed_icon_new_with_default_fallbacks (icon_name);
