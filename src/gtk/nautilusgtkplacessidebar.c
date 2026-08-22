@@ -1192,7 +1192,7 @@ update_places (NautilusGtkPlacesSidebar *sidebar)
             const char *name = groups[i];
             g_autofree char *backend = NULL;
             const char *label = name;
-            const char *icon_name = "folder-remote-symbolic";
+            const char *icon_name = "pulsar-cloud-symbolic";
             GIcon *icon;
             g_autofree char *remote_uri = NULL;
 
@@ -1216,7 +1216,7 @@ update_places (NautilusGtkPlacesSidebar *sidebar)
             else if (g_strcmp0 (backend, "iclouddrive") == 0)
               {
                 label = _("iCloud");
-                icon_name = "icloud";
+                icon_name = "pulsar-cloud-symbolic";
               }
 
             icon = g_themed_icon_new_with_default_fallbacks (icon_name);
