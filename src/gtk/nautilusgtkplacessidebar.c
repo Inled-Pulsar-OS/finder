@@ -2017,6 +2017,17 @@ open_row (NautilusGtkSidebarRow      *row,
                 "volume", &volume,
                 NULL);
 
+  /* The "add" pseudo-remote must be handled before the generic
+   * pulsar-cloud://<remote> branch below. */
+  if (uri != NULL && g_str_has_prefix (uri, "pulsar-cloud://add"))
+    {
+      launch_cloud_add_terminal ();
+
+      g_object_unref (sidebar);
+      g_free (uri);
+      return;
+    }
+
   if (uri != NULL && g_str_has_prefix (uri, "pulsar-cloud://"))
     {
       const char *remote = uri + strlen ("pulsar-cloud://");
@@ -2034,15 +2045,6 @@ open_row (NautilusGtkSidebarRow      *row,
                      spawn_error->message);
           g_error_free (spawn_error);
         }
-      return;
-    }
-
-  if (uri != NULL && g_str_has_prefix (uri, "pulsar-cloud://add"))
-    {
-      launch_cloud_add_terminal ();
-
-      g_object_unref (sidebar);
-      g_free (uri);
       return;
     }
 
