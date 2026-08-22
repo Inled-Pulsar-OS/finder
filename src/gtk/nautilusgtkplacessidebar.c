@@ -660,83 +660,15 @@ on_account_updated (GObject    *object,
 #endif
 
 static void
-on_cloud_add_popover_closed (GtkPopover *popover,
-                             gpointer    user_data)
+launch_cloud_add_terminal (void)
 {
-  gtk_widget_unparent (GTK_WIDGET (popover));
-}
-
-static void
-on_cloud_command_clicked (GtkButton *button,
-                          gpointer   user_data)
-{
-  const char *command = user_data;
-  GtkWidget *popover;
   GError *error = NULL;
 
-  popover = gtk_widget_get_ancestor (GTK_WIDGET (button), GTK_TYPE_POPOVER);
-  if (popover != NULL)
+  if (!g_spawn_command_line_async ("gnome-terminal -- bash -lc 'pulsar-cloud add'", &error))
     {
-      gtk_popover_popdown (GTK_POPOVER (popover));
-    }
-
-  if (!g_spawn_command_line_async (command, &error))
-    {
-      g_warning ("Unable to launch '%s': %s", command, error->message);
+      g_warning ("Unable to launch the cloud account setup: %s", error->message);
       g_error_free (error);
     }
-}
-
-static GtkWidget *
-cloud_add_menu_button (const char *label,
-                       const char *command)
-{
-  GtkWidget *button;
-
-  button = gtk_button_new_with_label (label);
-  gtk_button_set_has_frame (GTK_BUTTON (button), FALSE);
-  gtk_widget_add_css_class (button, "cloud-menu-item");
-  gtk_widget_set_halign (button, GTK_ALIGN_FILL);
-  g_signal_connect_data (button, "clicked",
-                         G_CALLBACK (on_cloud_command_clicked),
-                         g_strdup (command), (GClosureNotify) g_free, 0);
-
-  return button;
-}
-
-static void
-show_cloud_add_popover (NautilusGtkPlacesSidebar *sidebar,
-                        GtkWidget                *row)
-{
-  GtkWidget *popover;
-  GtkWidget *box;
-  int width, height;
-  GdkRectangle rect;
-
-  box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
-  gtk_box_append (GTK_BOX (box),
-                  cloud_add_menu_button (_("Online Accounts…"),
-                                         "gnome-control-center online-accounts"));
-  gtk_box_append (GTK_BOX (box),
-                  cloud_add_menu_button (_("Google Drive…"),
-                                         "gnome-terminal -- bash -c 'pulsar-cloud setup google-drive; echo; read -n 1'"));
-  gtk_box_append (GTK_BOX (box),
-                  cloud_add_menu_button (_("OneDrive…"),
-                                         "gnome-terminal -- bash -c 'pulsar-cloud setup onedrive; echo; read -n 1'"));
-
-  popover = gtk_popover_new ();
-  gtk_popover_set_child (GTK_POPOVER (popover), box);
-  gtk_widget_set_parent (popover, row);
-  gtk_popover_set_position (GTK_POPOVER (popover), GTK_POS_RIGHT);
-  width = gtk_widget_get_width (row);
-  height = gtk_widget_get_height (row);
-  rect.x = width;
-  rect.y = height / 2;
-  rect.width = 1;
-  rect.height = 1;
-  gtk_popover_set_pointing_to (GTK_POPOVER (popover), &rect);
-  g_signal_connect (popover, "closed", G_CALLBACK (on_cloud_add_popover_closed), NULL);
-  gtk_popover_popup (GTK_POPOVER (popover));
 }
 
 static void
@@ -1281,6 +1213,11 @@ update_places (NautilusGtkPlacesSidebar *sidebar)
                 label = _("Dropbox");
                 icon_name = "dropbox";
               }
+            else if (g_strcmp0 (backend, "iclouddrive") == 0)
+              {
+                label = _("iCloud");
+                icon_name = "icloud";
+              }
 
             icon = g_themed_icon_new_with_default_fallbacks (icon_name);
             remote_uri = g_strdup_printf ("pulsar-cloud://%s", name);
@@ -1294,17 +1231,17 @@ update_places (NautilusGtkPlacesSidebar *sidebar)
       }
   }
 
-  /* Entry point to configure online accounts (Google Drive, Nextcloud…).
-   * Activating the row shows the provider menu (see open_row). */
+  /* Entry point to configure any cloud account supported by rclone.
+   * Activating the row opens a terminal running 'pulsar-cloud add'. */
   {
-    GIcon *goa_icon = g_themed_icon_new_with_default_fallbacks ("avatar-default-symbolic");
+    GIcon *add_icon = g_themed_icon_new_with_default_fallbacks ("list-add-symbolic");
     add_place (sidebar, NAUTILUS_GTK_PLACES_BUILT_IN,
                NAUTILUS_GTK_PLACES_SECTION_CLOUD,
-               _("Add Online Account…"), goa_icon, NULL,
-               "goa-add://account",
+               _("Add Cloud Account…"), add_icon, NULL,
+               "pulsar-cloud://add",
                NULL, NULL, NULL, NULL, 0,
-               _("Add Online Account…"));
-    g_object_unref (goa_icon);
+               _("Add Cloud Account…"));
+    g_object_unref (add_icon);
   }
 
   /* Add macOS style Tags Section */
@@ -2100,10 +2037,9 @@ open_row (NautilusGtkSidebarRow      *row,
       return;
     }
 
-  if (uri != NULL && g_str_has_prefix (uri, "goa-add://"))
+  if (uri != NULL && g_str_has_prefix (uri, "pulsar-cloud://add"))
     {
-      /* Show the provider menu instead of launching the settings directly. */
-      show_cloud_add_popover (sidebar, GTK_WIDGET (row));
+      launch_cloud_add_terminal ();
 
       g_object_unref (sidebar);
       g_free (uri);
