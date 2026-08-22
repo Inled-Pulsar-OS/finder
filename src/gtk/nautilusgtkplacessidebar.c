@@ -664,7 +664,7 @@ launch_cloud_add_terminal (void)
 {
   GError *error = NULL;
 
-  if (!g_spawn_command_line_async ("gnome-terminal -- bash -lc 'pulsar-cloud add'", &error))
+  if (!g_spawn_command_line_async ("pulsar-cloud choose", &error))
     {
       g_warning ("Unable to launch the cloud account setup: %s", error->message);
       g_error_free (error);
