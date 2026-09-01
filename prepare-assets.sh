@@ -25,11 +25,13 @@ find "$STAGE_DIR" -mindepth 1 -maxdepth 1 ! -name DEBIAN -exec rm -rf {} +
 # ==============================================================================
 # 2. Install build dependencies (only if running as root, e.g. inside a chroot)
 # ==============================================================================
-BUILD_DEPS="meson ninja-build gettext libgtk-4-dev libadwaita-1-dev
-libglib2.0-dev libgnome-desktop-4-dev libgnome-autoar-dev libportal-dev
-libportal-gtk4-dev libtinysparql-dev libgexiv2-dev libcloudproviders-dev
-libgdk-pixbuf-2.0-dev libgraphene-1.0-dev gstreamer1.0-plugins-base
-libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev desktop-file-utils"
+# NOTE: must be a single line — this variable is expanded inside a
+# 'bash -c "..."' inline script, where newlines would be interpreted as
+# command separators ("libglib2.0-dev: command not found").
+# libgirepository1.0-dev: ships gobject-introspection-1.0.pc (needed by libnautilus-extension)
+# libtracker-sparql-3.0-dev: ships tracker-sparql-3.0.pc (libtinysparql-dev alone
+# does not reliably expose it in trixie); cmake: required by some meson deps
+BUILD_DEPS="build-essential cmake meson ninja-build gettext libgirepository1.0-dev libgtk-4-dev libadwaita-1-dev libglib2.0-dev libgnome-desktop-4-dev libgnome-autoar-0-dev libportal-dev libportal-gtk4-dev libtinysparql-dev libtracker-sparql-3.0-dev libgexiv2-dev libcloudproviders-dev libgdk-pixbuf-2.0-dev libgraphene-1.0-dev gstreamer1.0-plugins-base libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev desktop-file-utils"
 
 if [ "$(id -u)" -eq 0 ]; then
     echo "📦 Instalando dependencias de compilación..."
@@ -68,7 +70,9 @@ if ! $IS_DEBIAN_HOST && [ -d "$DEBIAN_CHROOT/usr/bin" ]; then
         set -e
         export DEBIAN_FRONTEND=noninteractive
         apt-get update || true
-        apt-get install -y --no-install-recommends $BUILD_DEPS || true
+        # No '|| true' here: a silently-swallowed install failure (missing/renamed
+        # package) only surfaces later as a confusing meson compiler error.
+        apt-get install -y --no-install-recommends $BUILD_DEPS
         cd /tmp/nautilus-chroot-build
         meson setup --prefix=/usr --buildtype=release -D docs=false -D tests=none build src
         ninja -C build -j \$(nproc)
