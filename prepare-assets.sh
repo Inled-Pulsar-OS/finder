@@ -45,7 +45,7 @@ meson_build() {
         -D tests=none \
         "$build_dir" "$src_dir"
     ninja -C "$build_dir" -j "$(nproc)"
-    DESTDIR="$dest_dir" meson install -C build_dir >/dev/null 2>&1 || DESTDIR="$dest_dir" meson install -C build_dir
+    DESTDIR="$dest_dir" meson install -C "$build_dir"
 }
 
 IS_DEBIAN_HOST=false
