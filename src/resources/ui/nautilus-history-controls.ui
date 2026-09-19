@@ -5,13 +5,20 @@
   <template class="NautilusHistoryControls" parent="AdwBin">
     <property name="child">
       <object class="GtkBox">
-        <property name="spacing">6</property>
+        <property name="spacing">0</property>
+        <property name="valign">center</property>
+        <style>
+          <class name="finder-pill-segmented"/>
+        </style>
         <child>
           <object class="GtkButton" id="back_button">
             <property name="tooltip_text" translatable="yes">Back</property>
             <property name="valign">center</property>
             <property name="action_name">slot.back</property>
             <property name="icon_name">go-previous-symbolic</property>
+            <style>
+              <class name="flat"/>
+            </style>
           </object>
         </child>
         <child>
@@ -20,6 +27,9 @@
             <property name="valign">center</property>
             <property name="action_name">slot.forward</property>
             <property name="icon_name">go-next-symbolic</property>
+            <style>
+              <class name="flat"/>
+            </style>
           </object>
         </child>
       </object>

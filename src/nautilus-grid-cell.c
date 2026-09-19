@@ -286,29 +286,6 @@ on_label_query_tooltip (GtkWidget  *widget,
 }
 
 static void
-on_starred_changed (NautilusTagManager *tag_manager,
-                    GList              *changed_files,
-                    gpointer            user_data)
-{
-    NautilusGridCell *self = NAUTILUS_GRID_CELL (user_data);
-    g_autoptr (NautilusViewItem) item = NULL;
-    NautilusFile *file;
-
-    item = nautilus_view_cell_get_item (NAUTILUS_VIEW_CELL (self));
-    if (item == NULL)
-    {
-        return;
-    }
-
-    file = nautilus_view_item_get_file (item);
-    if (g_list_find (changed_files, file))
-    {
-        update_emblems (self);
-        update_star_button (self);
-    }
-}
-
-static void
 on_map_changed (GtkWidget *widget,
                 gpointer   user_data)
 {
@@ -392,9 +369,6 @@ nautilus_grid_cell_init (NautilusGridCell *self)
     g_signal_connect (motion_controller, "leave",
                       G_CALLBACK (on_grid_cell_motion_leave), self);
     gtk_widget_add_controller (GTK_WIDGET (self), motion_controller);
-
-    g_signal_connect_object (nautilus_tag_manager_get (), "starred-changed",
-                             G_CALLBACK (on_starred_changed), self, G_CONNECT_DEFAULT);
 
     g_signal_connect_object (nautilus_preferences, "changed::" NAUTILUS_PREFERENCES_DATE_TIME_FORMAT,
                              G_CALLBACK (update_captions), self,

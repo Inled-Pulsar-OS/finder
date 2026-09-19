@@ -442,6 +442,11 @@ load_colored_files (NautilusTagManager *self)
         return;
     }
 
+    if (!g_key_file_has_group (keyfile, FOLDER_COLORS_GROUP))
+    {
+        return;
+    }
+
     uris = g_key_file_get_keys (keyfile, FOLDER_COLORS_GROUP, &n_uris, &error);
     if (error != NULL)
     {
@@ -552,8 +557,9 @@ migrate_legacy_colored_metadata (NautilusTagManager *self)
     MigrateData *data;
     GHashTableIter iter;
     gpointer key;
+    g_autofree gchar *store_path = get_folder_colors_store_path ();
 
-    if (!self->database_ok)
+    if (!self->database_ok || g_file_test (store_path, G_FILE_TEST_EXISTS))
     {
         return;
     }

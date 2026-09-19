@@ -36,43 +36,61 @@
 
 /* Path bar */
 
-#NautilusPathBar {
-  background-color: color-mix(in srgb, currentColor 10%, transparent);
-  border-radius: 9px;
+#NautilusPathBar,
+NautilusPathBar,
+headerbar NautilusPathBar,
+headerbar #path_bar {
+  background: transparent;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
 }
-#NautilusPathBar > menubutton {
+#NautilusPathBar > menubutton,
+#NautilusPathBar > menubutton > button {
   margin: 0px;
+  background: transparent;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
 }
 
-#NautilusPathBar > scrolledwindow undershoot.left {
-  background: linear-gradient(to right, var(--headerbar-shade-color) 6px, transparent 24px);
-  border-left: solid 1px var(--border-color);
-}
+#NautilusPathBar > scrolledwindow undershoot.left,
 #NautilusPathBar > scrolledwindow undershoot.right {
-  background: linear-gradient(to left, var(--headerbar-shade-color) 6px, transparent 24px);
-  border-right: solid 1px var(--border-color);
+  background: none;
+  border: none;
 }
 
 /* Match sidebar's rounded corners on the "start" side. */
-#NautilusPathBar > scrolledwindow:dir(ltr) undershoot.left {
-  border-radius: 9px 0px 0px 9px;
-}
+#NautilusPathBar > scrolledwindow:dir(ltr) undershoot.left,
 #NautilusPathBar > scrolledwindow:dir(rtl) undershoot.right {
-  border-radius: 0px 9px 9px 0px;
+  border-radius: 0;
 }
 
 #NautilusPathButton {
-  margin: 3px;
+  margin: 0 2px;
   min-width: 8px;
-  border-radius: 7px;
+  border-radius: 6px;
   padding-top: 0px;
   padding-bottom: 0px;
+  background: transparent;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 #NautilusPathButton:not(:hover),
-#NautilusPathButton.current-dir
-{
+#NautilusPathButton.current-dir {
   background: none;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+#NautilusPathButton:hover {
+  background: alpha(currentColor, 0.08);
+  background-color: alpha(currentColor, 0.08);
+  border: none;
+  box-shadow: none;
 }
 
 #NautilusPathButton:not(.current-dir):not(:backdrop):hover label,
@@ -417,49 +435,144 @@ row.tag-gray image {
 
 /* Finder Pill View Switcher & Segmented Controls */
 NautilusViewControls,
-NautilusViewControls > box {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
+NautilusViewControls > box,
+NautilusHistoryControls,
+NautilusHistoryControls > box,
+#share_tags_pill {
+  background: transparent;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
 }
 
-/* Unified macOS-style capsule grouping buttons. alpha() is used instead of
- * color-mix() so the capsule renders on every GTK 4.x release. */
-.finder-pill-segmented {
-  background-color: alpha(currentColor, 0.10) !important;
-  background-image: none !important;
-  border-radius: 9999px !important;
-  padding: 3px !important;
-  border: 1px solid alpha(currentColor, 0.08) !important;
-  box-shadow: none !important;
+/* Outer unified pill container: exactly 28px height */
+.finder-pill-segmented,
+headerbar .finder-pill-segmented,
+headerbar box.finder-pill-segmented,
+headerbar windowhandle box.finder-pill-segmented {
+  background-color: alpha(currentColor, 0.08);
+  background-image: none;
+  border: 1px solid alpha(currentColor, 0.12);
+  border-radius: 9999px;
+  padding: 1px 2px;
+  margin: 0;
+  min-height: 28px;
+  box-shadow: none;
 }
 
-.finder-pill-segmented > togglebutton,
-.finder-pill-segmented > button,
-.finder-pill-segmented > menubutton,
-.finder-pill-segmented > menubutton > button {
-  border-radius: 9999px !important;
-  min-height: 24px !important;
-  min-width: 30px !important;
-  padding: 2px 8px !important;
-  margin: 0 !important;
-  border: none !important;
-  background: transparent !important;
-  background-image: none !important;
-  outline: none !important;
-  box-shadow: none !important;
+/* Completely strip individual button borders, circles, outlines, shadows and default Adwaita backgrounds */
+.finder-pill-segmented button,
+.finder-pill-segmented button.flat,
+.finder-pill-segmented button.image-button,
+.finder-pill-segmented button.circular,
+.finder-pill-segmented button.toggle,
+.finder-pill-segmented menubutton,
+.finder-pill-segmented menubutton > button,
+.finder-pill-segmented menubutton.flat > button,
+headerbar .finder-pill-segmented button,
+headerbar .finder-pill-segmented button.flat,
+headerbar .finder-pill-segmented button.image-button,
+headerbar .finder-pill-segmented button.circular,
+headerbar .finder-pill-segmented button.toggle,
+headerbar .finder-pill-segmented menubutton,
+headerbar .finder-pill-segmented menubutton > button,
+headerbar .finder-pill-segmented menubutton.flat > button,
+headerbar windowhandle .finder-pill-segmented button,
+headerbar windowhandle .finder-pill-segmented menubutton > button {
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  border-color: transparent;
+  border-radius: 9999px;
+  box-shadow: none;
+  text-shadow: none;
+  outline: none;
+  min-height: 24px;
+  min-width: 24px;
+  padding: 2px 6px;
+  margin: 0;
+  transition: none;
 }
 
-.finder-pill-segmented > togglebutton:checked,
-.finder-pill-segmented > button:checked {
-  background-color: alpha(currentColor, 0.20) !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
+/* Hover state inside pill: subtle flat highlight */
+.finder-pill-segmented button:hover:not(:checked):not(:active),
+.finder-pill-segmented menubutton:hover > button:not(:checked):not(:active),
+headerbar .finder-pill-segmented button:hover:not(:checked):not(:active),
+headerbar .finder-pill-segmented menubutton:hover > button:not(:checked):not(:active) {
+  background: alpha(currentColor, 0.08);
+  background-color: alpha(currentColor, 0.08);
+  background-image: none;
+  border: none;
+  box-shadow: none;
+  text-shadow: none;
 }
 
-.finder-pill-segmented > togglebutton:hover:not(:checked),
-.finder-pill-segmented > button:hover:not(:checked),
-.finder-pill-segmented > menubutton:hover > button {
-  background-color: alpha(currentColor, 0.12) !important;
+/* Active / Checked state inside pill: elegant inner fill without shadow */
+.finder-pill-segmented button:checked,
+.finder-pill-segmented button:active,
+.finder-pill-segmented menubutton:checked > button,
+.finder-pill-segmented menubutton > button:checked,
+headerbar .finder-pill-segmented button:checked,
+headerbar .finder-pill-segmented button:active,
+headerbar .finder-pill-segmented menubutton:checked > button,
+headerbar .finder-pill-segmented menubutton > button:checked {
+  background: alpha(currentColor, 0.22);
+  background-color: alpha(currentColor, 0.22);
+  background-image: none;
+  border: none;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+/* Focus states inside pill: no focus outline ring */
+.finder-pill-segmented button:focus,
+.finder-pill-segmented button:focus-visible,
+.finder-pill-segmented menubutton > button:focus,
+.finder-pill-segmented menubutton > button:focus-visible,
+headerbar .finder-pill-segmented button:focus,
+headerbar .finder-pill-segmented button:focus-visible,
+headerbar .finder-pill-segmented menubutton > button:focus,
+headerbar .finder-pill-segmented menubutton > button:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+/* History buttons (< and >) compact height */
+NautilusHistoryControls button,
+headerbar NautilusHistoryControls button,
+#back_button,
+#forward_button {
+  min-height: 24px;
+  min-width: 24px;
+  padding: 2px 5px;
+}
+
+/* Match search entry and location entry capsule height (28px) */
+headerbar entry,
+.finder-toolbar entry,
+#location_entry {
+  min-height: 28px;
+  border-radius: 9999px;
+  padding: 0 8px;
+  box-shadow: none;
+}
+
+headerbar entry:not(:focus-within),
+.finder-toolbar entry:not(:focus-within),
+#location_entry:not(:focus-within) {
+  background: transparent;
+  background-color: transparent;
+  border: 1px solid transparent;
+  box-shadow: none;
+}
+
+headerbar entry:focus-within,
+.finder-toolbar entry:focus-within,
+#location_entry:focus-within {
+  background-color: alpha(currentColor, 0.10);
+  border: 1px solid alpha(currentColor, 0.15);
+  box-shadow: none;
 }
 
 /* MacTahoe Toolbar & Navigation Elements */

@@ -54,6 +54,9 @@
                 <property name="tooltip-text" translatable="yes">as Icons</property>
                 <property name="action-name">slot.files-view-mode</property>
                 <property name="action-target">uint32 2</property>
+                <style>
+                  <class name="flat"/>
+                </style>
               </object>
             </child>
             <child>
@@ -62,12 +65,18 @@
                 <property name="tooltip-text" translatable="yes">as List</property>
                 <property name="action-name">slot.files-view-mode</property>
                 <property name="action-target">uint32 1</property>
+                <style>
+                  <class name="flat"/>
+                </style>
               </object>
             </child>
             <child>
               <object class="GtkMenuButton" id="view_split_button">
                 <property name="icon-name">view-sort-descending-symbolic</property>
                 <property name="tooltip-text" translatable="yes">View &amp; Grouping Options</property>
+                <style>
+                  <class name="flat"/>
+                </style>
                 <property name="popover">
                   <object class="GtkPopoverMenu">
                     <property name="menu-model">view_menu</property>
